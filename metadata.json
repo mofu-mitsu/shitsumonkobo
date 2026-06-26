@@ -1,0 +1,6 @@
+{
+  "name": "しつもん工房",
+  "description": "診断・クイズ・アンケート・ガチャをノーコードで自由に作れるクリエイティブプラットフォーム。季節ごとのオート着色や、芋虫潰し・線つなぎ・タップ音響などの楽しいギミックを搭載！",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
