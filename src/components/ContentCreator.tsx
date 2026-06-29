@@ -355,9 +355,11 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
       id: "r_" + Math.random().toString(36).substring(2, 9),
       title: "診断結果の仮の名前",
       description: "結果の詳しい説明文をここに入力してください。",
-      conditionAttribute: content.type === 'quiz' ? 'correct' : 'A',
+      conditionAttribute: content.type === 'quiz' ? 'correct' : (content.scoringAttributes[0] || 'A'),
       conditionScoreMin: 1,
-      imageUrl: "✨"
+      conditionType: content.type === 'quiz' ? 'threshold' : 'max_expression',
+      imageUrl: "✨",
+      isFallback: false
     };
     setContent(prev => ({
       ...prev,
@@ -608,7 +610,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                   <label className="block text-xs font-bold text-slate-700 mb-1">🏺 しつもんのタイトル・お題（必須）</label>
                   <input
                     type="text"
-                    placeholder="例: あなたの認知心理類型診断、たたきゲーム"
+                    placeholder="例: あなたの認知心理性格診断、たたきゲーム"
                     value={content.title}
                     onChange={(e) => setContent({ ...content, title: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-400 transition-colors"
@@ -626,7 +628,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                     }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-sky-400 cursor-pointer"
                   >
-                    <option value="diagnostic">🔮 性格・類型診断</option>
+                    <option value="diagnostic">🔮 心理テスト・性格診断</option>
                     <option value="quiz">🎯 クイズ・問答ゲーム</option>
                     <option value="survey">📊 汎用アンケート</option>
                     <option value="gacha">🎁 おもしろガチャ</option>
@@ -1273,6 +1275,29 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                     {/* ================= type === pairing (線つなぎペア) ================= */}
                     {q.type === 'pairing' && (
                       <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-4 pl-3 border-l-2 border-slate-200 shadow-xs">
+                        
+                        {content.type !== 'quiz' && content.type !== 'survey' && (
+                          <div className="mb-4">
+                            <label className="block text-[10px] text-slate-500 font-bold mb-1">
+                              💯 満点（全問正解）だった場合の加点・属性 (例: A 10 B 5)
+                            </label>
+                            <input
+                              type="text"
+                              value={stringifySimpleAttributes(q.pairingAttributeScores)}
+                              onChange={(e) => {
+                                try {
+                                  const parsed = e.target.value ? parseSimpleAttributes(e.target.value) : undefined;
+                                  const updatedQs = content.questions.map(qu => qu.id === q.id ? { ...qu, pairingAttributeScores: parsed } : qu);
+                                  setContent({ ...content, questions: updatedQs });
+                                } catch(e) {}
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none"
+                              placeholder="例: Score 10 Ni 5"
+                            />
+                            <p className="text-[9px] text-slate-400 mt-1">※正解ペア数に応じて、ここに入力した加点が割合で配分されます。</p>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-bold text-slate-700">
                             🔗 つなぐペアの設定 (左の画像/文字と、右の画像/文字の両方を自由に作れます)：
@@ -1700,13 +1725,26 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   }}
                                   className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700"
                                 >
+                                  <option value="max_expression">計算式の最大値 (例: Ni + Ti が一番高い結果になる)</option>
                                   <option value="threshold">最低点数 (単一パラメータ)</option>
                                   <option value="expression">高度な条件式 (例: A + B &gt;= 5)</option>
-                                  <option value="max_expression">計算式の最大値 (例: Ni + Ti が一番高い結果になる)</option>
                                 </select>
                               </div>
 
-                              {(result.conditionType === 'threshold' || !result.conditionType) && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="checkbox"
+                                  checked={!!result.isFallback}
+                                  onChange={(e) => {
+                                    const updated = content.results.map(r => r.id === result.id ? { ...r, isFallback: e.target.checked } : r);
+                                    setContent({ ...content, results: updated });
+                                  }}
+                                  className="w-3.5 h-3.5"
+                                />
+                                <span className="text-[10px] text-slate-500 font-bold">どの条件にも当てはまらない時に出す結果（フォールバック）にする</span>
+                              </div>
+
+                              {(result.conditionType === 'threshold' || !result.conditionType) && !result.isFallback && (
                                 <div className="flex gap-3">
                                   <div className="flex-1">
                                     <label className="block text-xs font-bold text-slate-600 mb-1">📯 判定に使うパラメータ</label>
@@ -1743,7 +1781,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 </div>
                               )}
 
-                              {(result.conditionType === 'expression' || result.conditionType === 'max_expression') && (
+                              {(result.conditionType === 'expression' || result.conditionType === 'max_expression') && !result.isFallback && (
                                 <div>
                                   <label className="block text-[10px] font-bold text-indigo-600 mb-1">
                                     ⚙️ 【上級】高度な条件式
@@ -1823,19 +1861,25 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       <label className="block text-[10px] text-slate-500 font-bold mb-1">マスコット画像/絵文字</label>
                       <input
                         type="text"
-                        value={content.gimmicks.lsiMascotImageOrEmoji || "🐛"}
-                        onChange={(e) => {
-                          setContent(prev => ({
-                            ...prev,
-                            gimmicks: { ...prev.gimmicks, lsiMascotImageOrEmoji: e.target.value }
-                          }));
-                        }}
-                        placeholder="例: 🐧"
-                        className="bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 w-24 text-center focus:outline-none"
+                        value={content.gimmicks.lsiMascotImageOrEmoji || '🐛'}
+                        onChange={e => setContent({ ...content, gimmicks: { ...content.gimmicks, lsiMascotImageOrEmoji: e.target.value }})}
+                        className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-center"
+                        placeholder="🐛"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-500 font-bold mb-1">潰すまでに要する累積タップ数</label>
+                    <div className="flex-1">
+                      <label className="block text-[10px] text-slate-500 font-bold mb-1">マスコットの名前</label>
+                      <input
+                        type="text"
+                        value={content.gimmicks.caterpillarName || 'イモムシ'}
+                        onChange={e => setContent({ ...content, gimmicks: { ...content.gimmicks, caterpillarName: e.target.value }})}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">潰すまでに要する累積タップ数</label>
                       <input
                         type="number"
                         value={content.gimmicks.caterpillarSquishTarget}
@@ -1848,7 +1892,6 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                         }}
                         className="bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 w-20 text-center font-mono focus:outline-none"
                       />
-                    </div>
                   </div>
 
                   <div>
@@ -1870,14 +1913,28 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       rows={4}
                       value={(content.gimmicks.caterpillarQuotes || []).join("\n")}
                       onChange={(e) => {
-                        const lines = e.target.value.split("\n").filter(Boolean);
+                        const lines = e.target.value.split("\n");
                         setContent(prev => ({
                           ...prev,
                           gimmicks: { ...prev.gimmicks, caterpillarQuotes: lines }
                         }));
                       }}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 resize-none focus:outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 resize-none focus:outline-none mb-3"
                       placeholder="セリフを登録してね！"
+                    />
+                    
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">💀 潰されたときの断末魔セリフ</label>
+                    <input
+                      type="text"
+                      value={content.gimmicks.caterpillarSquishQuote || ""}
+                      onChange={(e) => {
+                        setContent(prev => ({
+                          ...prev,
+                          gimmicks: { ...prev.gimmicks, caterpillarSquishQuote: e.target.value }
+                        }));
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none"
+                      placeholder="例: ぐえっ！"
                     />
                   </div>
                 </div>

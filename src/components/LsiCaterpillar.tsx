@@ -4,6 +4,7 @@ import { playSound } from "./SoundEngine";
 
 interface LsiCaterpillarProps {
   quotes?: string[];
+  squishQuote?: string;
   squishTarget?: number;
   mascot?: string;
   onSquish?: () => void;
@@ -12,6 +13,7 @@ interface LsiCaterpillarProps {
 
 export default function LsiCaterpillar({
   quotes = ["僕は、感覚と主観的論理の塊なのだ…", "そんなにタップしないでほしい、僕潰れちゃうから…"],
+  squishQuote = "💥 ぎゃーーー！潰されたァーー！！！",
   squishTarget = 30,
   mascot = "🐛",
   onSquish,
@@ -60,7 +62,7 @@ export default function LsiCaterpillar({
     // 規定数タップで潰れる
     if (nextCount >= squishTarget) {
       setIsSquished(true);
-      setQuote("💥 ぎゃーーー！潰されたァーー！！！");
+      setQuote(squishQuote);
       playSound("bell");
       if (onSquish) onSquish();
     } else {

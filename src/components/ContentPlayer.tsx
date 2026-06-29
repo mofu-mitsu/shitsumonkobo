@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ShitsumonKobo_Content, ShitsumonKobo_Question, ShitsumonKobo_GachaItem, ShitsumonKobo_ResultOption } from "../types";
 import { playSound } from "./SoundEngine";
 import PairingGame from "./PairingGame";
@@ -16,6 +16,29 @@ interface ContentPlayerProps {
   onClose: () => void;
   initialShowDashboard?: boolean;
 }
+
+const ExpandableRecentAnswers = ({ items, renderItem, listClassName = "" }: { items: any[], renderItem: (item: any, idx: number) => React.ReactNode, listClassName?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const displayItems = expanded ? items : items.slice(0, 5);
+  
+  if (items.length === 0) return <span className="text-[10px] text-slate-400">データなし</span>;
+  
+  return (
+    <div>
+      <div className={listClassName}>
+        {displayItems.map((item, idx) => renderItem(item, idx))}
+      </div>
+      {items.length > 5 && (
+        <button 
+          onClick={() => setExpanded(!expanded)} 
+          className="text-[10px] text-sky-500 hover:text-sky-600 mt-1 cursor-pointer font-bold inline-block"
+        >
+          {expanded ? "閉じる" : `もっと見る (${items.length - 5}件)`}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default function ContentPlayer({ content, season, currentUser, onClose, initialShowDashboard = false }: ContentPlayerProps) {
   // プレイ基本設定
@@ -277,10 +300,19 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           finalScores['correct'] += 1;
         }
       } else if (q.type === 'pairing') {
-        const pairingScore = pairingScores[q.id] || 0;
+        const pairingScore = pairingScores[q.id] || 0; // これは 0〜100 のパーセンテージになっている
         if (content.type === 'quiz') {
-           // ペアリングの場合はペア成立数を追加
-           finalScores['correct'] += pairingScore;
+           // ペアリングの場合、1ペア正解で25ptのような計算がPairingGame内部でされているが、
+           // クイズなら満点のパーセンテージを基に点数を与えるなど…一旦そのまま加算
+           finalScores['correct'] += (pairingScore === 100 ? 1 : 0); // 1問扱いならこう？
+        } else if (content.type !== 'survey' && q.pairingAttributeScores) {
+           // 診断モードの場合、pairingAttributeScores に設定された満点スコアを、正解率(0~100)で按分して加算
+           Object.entries(q.pairingAttributeScores).forEach(([attr, maxScore]) => {
+             const earned = (Number(maxScore) * pairingScore) / 100;
+             if (earned > 0) {
+               finalScores[attr] = (finalScores[attr] || 0) + earned;
+             }
+           });
         }
       } else if (q.type === 'text') {
         const textValue = textAnswers[q.id] || '';
@@ -477,6 +509,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
     // 評価
     let matchOptions = content.results.filter(r => {
+      if (r.isFallback) return false; // フォールバックは通常マッチから除外
+      
       const type = r.conditionType || 'threshold';
       
       if (type === 'threshold') {
@@ -521,6 +555,12 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         return 0; // 他の条件はそのまま
       });
       return sorted[0];
+    } else {
+      // フォールバックを探す
+      const fallbackResult = content.results.find(r => r.isFallback);
+      if (fallbackResult) {
+        return fallbackResult;
+      }
     }
 
     // 完全なフォールバック
@@ -640,6 +680,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       {content.gimmicks.enableLsiCaterpillar && (
         <LsiCaterpillar 
           quotes={content.gimmicks.caterpillarQuotes} 
+          squishQuote={content.gimmicks.caterpillarSquishQuote}
           squishTarget={content.gimmicks.caterpillarSquishTarget} 
           mascot={content.gimmicks.lsiMascotImageOrEmoji || "🐛"} 
           onTap={() => {
@@ -796,13 +837,45 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                                   );
                                 })}
                                 {q.type === 'slider' && (
-                                  <div className="text-[10px] text-slate-500">
-                                    スライダーの平均値など（準備中）
+                                  <div className="space-y-1 mt-2">
+                                    <p className="text-[10px] text-slate-500 font-bold border-b border-slate-100 pb-1 mb-1">スライダーの最近の回答:</p>
+                                    <ExpandableRecentAnswers 
+                                      items={playLogs.filter(l => l.answers?.[q.id] !== undefined)}
+                                      listClassName="flex flex-wrap gap-1"
+                                      renderItem={(l, lIdx) => (
+                                        <span key={lIdx} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-mono">
+                                          {l.answers[q.id]}
+                                        </span>
+                                      )}
+                                    />
                                   </div>
                                 )}
                                 {q.type === 'text' && (
-                                  <div className="text-[10px] text-slate-500">
-                                    自由記述回答は個別ログを確認してください。
+                                  <div className="space-y-1 mt-2">
+                                    <p className="text-[10px] text-slate-500 font-bold border-b border-slate-100 pb-1 mb-1">自由記述の最近の回答:</p>
+                                    <ExpandableRecentAnswers 
+                                      items={playLogs.filter(l => l.answers?.[q.id] !== undefined && l.answers?.[q.id] !== '')}
+                                      listClassName="space-y-1"
+                                      renderItem={(l, lIdx) => (
+                                        <div key={lIdx} className="bg-slate-50 text-slate-700 px-2 py-1 rounded text-[10px] border border-slate-100 break-words">
+                                          {l.answers[q.id]}
+                                        </div>
+                                      )}
+                                    />
+                                  </div>
+                                )}
+                                {q.type === 'pairing' && (
+                                  <div className="space-y-1 mt-2">
+                                    <p className="text-[10px] text-slate-500 font-bold border-b border-slate-100 pb-1 mb-1">線つなぎペアの最近のスコア (正解率):</p>
+                                    <ExpandableRecentAnswers 
+                                      items={playLogs.filter(l => l.answers?.[q.id] !== undefined)}
+                                      listClassName="flex flex-wrap gap-1"
+                                      renderItem={(l, lIdx) => (
+                                        <span key={lIdx} className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-mono border border-emerald-100">
+                                          {l.answers[q.id]}%
+                                        </span>
+                                      )}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -1497,6 +1570,21 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         )}
 
       </div>
+
+      {/* コピートースト通知 */}
+      <AnimatePresence>
+        {copiedLink && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg z-50 pointer-events-none flex items-center gap-2"
+          >
+            <CheckCircle2 size={14} className="text-emerald-400" />
+            共有用リンク(URL)をコピーしました！
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* フッター */}
       <div className={` ${content.themeColorMode === "custom" ? "bg-black/10" : season?.accentBg || "bg-sky-50/80"} px-6 py-4 flex-shrink-0 border-t border-white/20 flex justify-between items-center text-xs ${season?.textColor || "text-slate-500"} z-10 select-none backdrop-blur-md`}>

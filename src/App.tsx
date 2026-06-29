@@ -7,7 +7,8 @@ import WeatherEffect from "./components/WeatherEffect";
 import { auth, loginWithGoogle, logout } from "./lib/firebase";
 import { getPublicContents, getMyContents, getContentById, saveContent, deleteContent } from "./lib/contents";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X, Menu, HelpCircle, BarChart } from "lucide-react";
+import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X, Menu, HelpCircle, BarChart, Ticket, RotateCcw } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import SponsorAd from "./components/SponsorAd";
 import { initialSamples } from "./data/initialSamples";
 
@@ -52,12 +53,17 @@ export default function App() {
   // 基本データステート
   const [publicContents, setPublicContents] = useState<ShitsumonKobo_Content[]>([]);
   const [myContents, setMyContents] = useState<ShitsumonKobo_Content[]>([]);
+  const [playHistory, setPlayHistory] = useState<ShitsumonKobo_Content[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState<'all' | 'diagnostic' | 'quiz' | 'survey' | 'gacha'>('all');
+  const [visibleCount, setVisibleCount] = useState(12);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sortOrder, setSortOrder] = useState('newest');
+  const [toastMessage, setToastMessage] = useState("");
   
   // ナビゲーション・ビュー制御
   const [activeView, setActiveView] = useState<'gallery' | 'studio'>('gallery');
+  const [isInitializing, setIsInitializing] = useState(true);
   
   // モード：'idle' | 'creating' | 'playing'
   const [appMode, setAppMode] = useState<'idle' | 'creating' | 'playing'>('idle');
@@ -100,9 +106,10 @@ export default function App() {
   const fetchPublicList = async () => {
     try {
       let list = await getPublicContents();
-      if (list.length === 0) {
-        list = initialSamples;
-      }
+      // デフォルトのしつもんがつねに残るようにする
+      const dbIds = list.map(item => item.id);
+      const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id));
+      list = [...list, ...missingSamples];
       setPublicContents(list);
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
@@ -151,6 +158,14 @@ export default function App() {
     if (!currentUser) {
       loadMyStudioLocal();
     }
+    try {
+      const historyRaw = localStorage.getItem("shitsumonkobo_history");
+      if (historyRaw) setPlayHistory(JSON.parse(historyRaw));
+    } catch(e) {}
+    
+    // Simulate loading for the stylish entrance
+    const timer = setTimeout(() => setIsInitializing(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期
@@ -215,7 +230,8 @@ export default function App() {
     const shareUrl = `${base}?id=${id}`;
 
     navigator.clipboard.writeText(shareUrl).then(() => {
-      alert("🔗 共有専用URLをコピーしました！\n非公開診断でも、このリンクを共有すれば友達がすぐあそべるよ！");
+      setToastMessage("🔗 共有専用URLをコピーしました！");
+      setTimeout(() => setToastMessage(""), 3000);
     }).catch(err => {
       console.error("コピー失敗:", err);
       alert(`共有リンクはこちらです:\n${shareUrl}`);
@@ -283,6 +299,16 @@ export default function App() {
     setTargetContent(item);
     setInitDashboard(showDash);
     setAppMode('playing');
+
+    try {
+      setPlayHistory(prev => {
+        let history = prev.filter(h => h.id !== item.id);
+        history.unshift(item);
+        if (history.length > 20) history = history.slice(0, 20);
+        localStorage.setItem("shitsumonkobo_history", JSON.stringify(history));
+        return history;
+      });
+    } catch(e) {}
   };
 
   // 新規ボタン
@@ -291,6 +317,52 @@ export default function App() {
     setTargetContent(null);
     setAppMode('creating');
   };
+
+  if (isInitializing) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br ${season.bgColor} text-slate-800`}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+              className="text-5xl drop-shadow-md"
+            >
+              {season.icon}
+            </motion.div>
+            <motion.div 
+              className="absolute -bottom-2 -right-2 text-xl"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            >
+              ✨
+            </motion.div>
+          </div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className={`text-xl font-black bg-clip-text text-transparent bg-gradient-to-r ${season.titleGradient} tracking-widest`}
+          >
+            しつもん工房
+          </motion.h1>
+          <div className="w-32 h-1 bg-slate-200 rounded-full mt-2 overflow-hidden">
+            <motion.div 
+              className={`h-full bg-gradient-to-r ${season.buttonGradient}`}
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+            />
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-slate-50 bg-gradient-to-br text-slate-800 min-h-screen font-sans flex flex-col relative overflow-x-hidden ${season.bgColor}`}>
@@ -425,13 +497,35 @@ export default function App() {
                 </button>
               </div>
             )}
-
             <button
               onClick={() => { launchNewCreator(); setIsMobileMenuOpen(false); }}
               className={`bg-gradient-to-r ${season.buttonGradient} w-full text-white text-xs font-bold px-4 py-3 rounded-2xl flex justify-center items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer`}
             >
               <Plus size={14} strokeWidth={3} /> 新しいしつもんを作る
             </button>
+
+            {appMode !== 'idle' && (
+              <button
+                onClick={() => { setAppMode('idle'); setIsMobileMenuOpen(false); }}
+                className="bg-slate-100 text-slate-700 w-full text-xs font-bold px-4 py-3 rounded-2xl flex justify-center items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                <Compass size={14} /> ホーム（LAB）へ戻る
+              </button>
+            )}
+            
+            <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
+              <span className="text-xs font-bold text-slate-500">季節カラー</span>
+              <div className="flex gap-1">
+                {getSeasons().map((s, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setSeason(s); setIsMobileMenuOpen(false); }}
+                    className={`w-6 h-6 rounded-full cursor-pointer shadow-sm border-2 ${season.name === s.name ? 'border-slate-800 scale-110' : 'border-transparent'}`}
+                    style={{ background: s.accentColor }}
+                  />
+                ))}
+              </div>
+            </div>
 
             <div className="h-px bg-slate-200 w-full my-1"></div>
 
@@ -458,15 +552,40 @@ export default function App() {
                       }
                     }
                   }}
-                  className="bg-sky-500 w-full justify-center hover:bg-sky-600 text-white text-[10px] font-bold px-4 py-3 rounded-2xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                  className="bg-slate-800 hover:bg-slate-700 w-full text-white text-[10px] font-bold px-3 py-3 rounded-xl flex justify-center items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                 >
-                  Googleでログイン
+                  <Globe size={14} /> Googleでログイン
                 </button>
               )}
             </div>
           </div>
         )}
       </header>
+
+      {/* FAB (スマホ用 新規作成ボタン) */}
+      {appMode === 'idle' && (
+        <button
+          onClick={launchNewCreator}
+          className={`sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r ${season.buttonGradient} text-white rounded-full shadow-xl flex justify-center items-center z-40 active:scale-90 transition-transform`}
+        >
+          <Plus size={28} strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* コピートースト通知 */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-24 sm:bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs font-bold px-5 py-3 rounded-full shadow-2xl z-50 pointer-events-none flex items-center gap-2 whitespace-nowrap"
+          >
+            <Ticket size={16} className="text-sky-400" />
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 w-full max-w-6xl mx-auto p-4 z-10 space-y-6 animate-fade-in">
 
@@ -501,15 +620,28 @@ export default function App() {
             {activeView === 'gallery' && (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-white/70 p-3 rounded-2xl border border-sky-100 shadow-sm">
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                    <input 
-                      type="text" 
-                      placeholder="キーワードで検索..." 
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-sky-400"
-                    />
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="キーワードで検索..." 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                    <select
+                      value={searchCategory}
+                      onChange={e => setSearchCategory(e.target.value as any)}
+                      className="text-xs bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:outline-none focus:border-sky-400 text-slate-600 flex-1 sm:w-32"
+                    >
+                      <option value="all">すべて</option>
+                      <option value="diagnostic">診断</option>
+                      <option value="quiz">クイズ</option>
+                      <option value="survey">アンケート</option>
+                      <option value="gacha">ガチャ</option>
+                    </select>
                   </div>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <span className="text-[10px] font-bold text-slate-500">並び順</span>
@@ -538,11 +670,19 @@ export default function App() {
                     公開されているしつもんが見つかりません。右上から自分でつくってみましょう！
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {publicContents.filter(item => item.title.includes(searchQuery) || (item.description || '').includes(searchQuery)).sort((a, b) => sortOrder === 'newest' ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((item) => {
-                      // 好みの着色にする
-                      const itemColor = item.themeColorMode === 'custom' ? item.customColor : season.accentColor;
-                      return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      {publicContents
+                        .filter(item => 
+                          (item.title.includes(searchQuery) || (item.description || '').includes(searchQuery)) &&
+                          (searchCategory === 'all' || item.type === searchCategory)
+                        )
+                        .sort((a, b) => sortOrder === 'newest' ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                        .slice(0, visibleCount)
+                        .map((item) => {
+                        // 好みの着色にする
+                        const itemColor = item.themeColorMode === 'custom' ? item.customColor : season.accentColor;
+                        return (
                         <div 
                           key={item.id}
                           onClick={() => launchPlayer(item)}
@@ -592,7 +732,21 @@ export default function App() {
                         </div>
                       );
                     })}
-                  </div>
+                    </div>
+                    {publicContents.filter(item => 
+                      (item.title.includes(searchQuery) || (item.description || '').includes(searchQuery)) &&
+                      (searchCategory === 'all' || item.type === searchCategory)
+                    ).length > visibleCount && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          onClick={() => setVisibleCount(v => v + 12)}
+                          className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold px-6 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 text-xs flex items-center gap-2"
+                        >
+                          もっと見る
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -703,6 +857,47 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {/* C. あそんだ履歴 */}
+            {playHistory.length > 0 && (
+              <div className="pt-8 border-t border-slate-100 mt-8 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                  <RotateCcw size={14} className="text-slate-400" />
+                  最近あそんだしつもん
+                </h3>
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x no-scrollbar">
+                  {playHistory.map((item) => {
+                    const itemColor = item.themeColorMode === 'custom' ? item.customColor : season.accentColor;
+                    return (
+                      <div 
+                        key={item.id}
+                        onClick={() => launchPlayer(item)}
+                        className="bg-white border border-slate-200 hover:border-sky-300 min-w-[200px] w-[200px] p-4 rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between snap-start"
+                      >
+                        <div className="space-y-1 mb-4">
+                          <span className="font-mono text-[10px] text-slate-400">ID: {item.id.slice(0, 6)}</span>
+                          <h4 className="font-bold text-slate-800 text-sm line-clamp-2 leading-tight group-hover:text-sky-600 transition-colors">
+                            {item.title}
+                          </h4>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-slate-50 pt-2">
+                          <span 
+                            className="text-[10px] px-2 py-0.5 rounded-full font-bold opacity-90"
+                            style={{ backgroundColor: `${itemColor}20`, color: itemColor }}
+                          >
+                            {item.type === 'diagnostic' ? '診断' : item.type === 'quiz' ? 'クイズ' : item.type === 'survey' ? 'アンケート' : 'ガチャ'}
+                          </span>
+                          <span className="text-sky-500 text-[10px] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-bold">
+                            もう一回 <ArrowRight size={10} />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -817,7 +1012,7 @@ export default function App() {
       <footer className="border-t border-sky-100 bg-white py-6 select-none z-10 text-center">
         <div className="max-w-6xl mx-auto px-4 flex flex-col items-center text-xs text-slate-500 gap-3">
           <span>
-            しつもん工房 — 性格・心理類型診断・クイズ・アンケート・たたきゲーム・ガチャ・ノーコード作成プラットフォーム 🚀
+            しつもん工房 — 性格・心理性格診断・クイズ・アンケート・たたきゲーム・ガチャ・ノーコード作成プラットフォーム 🚀
           </span>
           <a href="https://mofu-mitsu.github.io/lab.html" target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-sky-600 transition-colors font-bold flex items-center gap-1">
             <Compass size={14} /> ホームへ戻る (LAB)

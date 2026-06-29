@@ -71,6 +71,7 @@ export interface ShitsumonKobo_Question {
   sliderScores: Record<string, number>; // スライダーの値に比例して乗算される属性加点設定
   textRules: ShitsumonKobo_TextRule[];
   pairItems: ShitsumonKobo_PairItem[];
+  pairingAttributeScores?: Record<string, number>;
   imageUrlOrEmoji?: string; // 質問と一緒に表示する画像や絵文字
   correctFeedback?: string; // クイズで正解時のコメント
   incorrectFeedback?: string; // クイズで不正解時のコメント
@@ -90,6 +91,7 @@ export interface ShitsumonKobo_ResultOption {
   conditionType?: ShitsumonKobo_ResultConditionType;
   conditionOrder?: string[];
   conditionSumAttributes?: string[];
+  isFallback?: boolean; // フォールバック結果
 }
 
 export interface ShitsumonKobo_GachaItem {
@@ -122,6 +124,7 @@ export interface ShitsumonKobo_GimmickConfig {
   secretLetterAttributeMultiplier?: Record<string, number>; // 手紙を開いたときに加算されるポイント
 
   caterpillarQuotes: string[];  // 芋虫がタップされたときに吐き出すセリフ
+  caterpillarSquishQuote?: string; // 芋虫が潰された時の断末魔セリフ
   caterpillarSquishTarget: number; // 何回タップで潰せるか (デフォルト30)
   caterpillarEmoji?: string;    // カスタマイズされた芋虫の絵文字
   caterpillarName?: string;     // カスタマイズされた芋虫の名前
