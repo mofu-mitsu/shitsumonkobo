@@ -150,6 +150,7 @@ export interface ShitsumonKobo_Content {
   quizMode?: 'instant' | 'summary'; // クイズモード：即時判定か、最後にまとめて結果か
   surveyShowStats?: boolean; // アンケートモードで終了時に投票率を表示するか
   creatorName: string;
+  creatorId?: string; // ログインユーザーのID
   creatorXHandle?: string; // Xのハンドルネーム
   isPublic: boolean;
   themeColorMode: 'auto' | 'custom';

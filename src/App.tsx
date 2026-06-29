@@ -5,8 +5,11 @@ import ContentPlayer from "./components/ContentPlayer";
 import { playSound } from "./components/SoundEngine";
 import WeatherEffect from "./components/WeatherEffect";
 import { auth, loginWithGoogle, logout } from "./lib/firebase";
+import { getPublicContents, getMyContents, getContentById, saveContent, deleteContent } from "./lib/contents";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X } from "lucide-react";
+import SponsorAd from "./components/SponsorAd";
+import { initialSamples } from "./data/initialSamples";
 
 // 季節ごとのオートカラーを算出
 
@@ -36,6 +39,12 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      if (user) {
+        loadMyStudio(user.uid);
+      } else {
+        // Fallback to local storage for guests
+        loadMyStudioLocal();
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -64,9 +73,8 @@ export default function App() {
       if (sharedId) {
         // まずサーバーから共有データを直接引っ張る
         try {
-          const res = await fetch(`/api/contents/${sharedId}`);
-          if (res.ok) {
-            const data = await res.json();
+          const data = await getContentById(sharedId);
+          if (data) {
             setTargetContent(data);
             setAppMode('playing');
             playSound("bell");
@@ -84,18 +92,41 @@ export default function App() {
   // サーバーの公開診断のロード
   const fetchPublicList = async () => {
     try {
-      const res = await fetch("/api/contents");
-      if (res.ok) {
-        const list = await res.json();
-        setPublicContents(list);
+      let list = await getPublicContents();
+      if (list.length === 0) {
+        list = initialSamples;
       }
+      setPublicContents(list);
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
+      setPublicContents(initialSamples);
     }
   };
 
-  // localStorage から自分の作った診断をロード
-  const loadMyStudio = () => {
+  // 自分の作った診断をロード
+  const loadMyStudio = async (userId: string) => {
+    try {
+      const list = await getMyContents(userId);
+      // ローカルのものとマージする
+      const raw = localStorage.getItem("my_shitsumonkobo_studio");
+      let localList: ShitsumonKobo_Content[] = [];
+      if (raw) {
+        localList = JSON.parse(raw);
+      }
+      
+      const merged = [...list];
+      localList.forEach(localItem => {
+        if (!merged.find(m => m.id === localItem.id)) {
+          merged.push(localItem);
+        }
+      });
+      setMyContents(merged);
+    } catch (e) {
+      console.error("スタジオの読み込みに失敗しました:", e);
+    }
+  };
+
+  const loadMyStudioLocal = () => {
     try {
       const raw = localStorage.getItem("my_shitsumonkobo_studio");
       if (raw) {
@@ -110,13 +141,21 @@ export default function App() {
 
   useEffect(() => {
     fetchPublicList();
-    loadMyStudio();
+    if (!currentUser) {
+      loadMyStudioLocal();
+    }
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期
   const handleSaveContent = async (updated: ShitsumonKobo_Content) => {
     try {
-      // 1. ローカル側の更新
+      if (currentUser && !updated.creatorId) {
+        updated.creatorId = currentUser.uid;
+      }
+      // 1. サーバーへ保存
+      await saveContent(updated);
+
+      // 2. ローカル側の更新
       let nextMy = [...myContents];
       const matchIdx = nextMy.findIndex(c => c.id === updated.id);
       if (matchIdx !== -1) {
@@ -126,25 +165,15 @@ export default function App() {
       }
       setMyContents(nextMy);
       localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
-
-      // 2. サーバーへPOST (公開設定、またはいつでも同期のために)
-      const isNew = matchIdx === -1;
-      const res = await fetch("/api/contents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated)
-      });
       
-      if (res.ok) {
-        fetchPublicList(); // 公開リスト再ロード
-      }
+      fetchPublicList(); // 公開リスト再ロード
       
       setAppMode('idle');
       setTargetContent(null);
       alert(`診断を保存・共有可能にしました！✨\n自分のスタジオ、またはギャラリーから選択して遊んでね。`);
     } catch (error) {
       console.error("保存失敗:", error);
-      alert("通信環境の都合でサーバーへの公開保存のみ保留されました（ローカルには保存されています！）");
+      alert("保存に失敗しました。もう一度お試しください。");
     }
   };
 
@@ -155,7 +184,7 @@ export default function App() {
 
     try {
       // 1. サーバーから削除
-      await fetch(`/api/contents/${id}`, { method: "DELETE" });
+      await deleteContent(id);
 
       // 2. ローカルから削除
       const nextMy = myContents.filter(c => c.id !== id);
@@ -204,19 +233,17 @@ export default function App() {
         const importedItem: ShitsumonKobo_Content = {
           ...payload,
           id: "ShitsumonKobo_" + Math.random().toString(36).substring(2, 9),
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          creatorId: currentUser?.uid
         };
+
+        // サーバーに保存
+        await saveContent(importedItem);
 
         const nextMy = [importedItem, ...myContents];
         setMyContents(nextMy);
         localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
         
-        // サーバーにも投げて共有可能に
-        await fetch("/api/contents", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(importedItem)
-        });
         fetchPublicList();
 
         playSound("bell");
@@ -603,6 +630,7 @@ export default function App() {
             <Compass size={14} /> ホームへ戻る (LAB)
           </a>
         </div>
+        <SponsorAd />
       </footer>
 
     </div>
