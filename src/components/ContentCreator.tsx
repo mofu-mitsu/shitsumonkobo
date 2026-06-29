@@ -527,6 +527,40 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
       {/* スクロール可能なメインエディタ */}
       <div className="flex-1 overflow-y-auto p-6 bg-white border-b border-sky-100 text-slate-800 font-sans">
         
+        {/* 未ログイン時の警告とログインボタン */}
+        {!currentUser && (
+          <div className="mb-6 bg-rose-50 border border-rose-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in">
+            <div className="flex items-start gap-2">
+              <span className="text-xl">💡</span>
+              <div className="text-xs text-rose-800 leading-relaxed">
+                <p className="font-bold text-sm mb-0.5">現在、ゲスト(匿名)として作成中です。</p>
+                <p>
+                  このまま公開できますが、ブラウザの履歴を消すと<strong>後で編集できなくなります</strong>。<br className="hidden sm:block" />
+                  Googleでログインすると、いつでも自分の作品を編集したり、みんなの回答データ(ログ)を見ることができます！
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  const { loginWithGoogle } = await import("../lib/firebase");
+                  await loginWithGoogle();
+                } catch (e: any) {
+                  if (e?.code === 'auth/operation-not-allowed') {
+                    alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                  } else {
+                    console.log("Login popup closed or failed:", e);
+                  }
+                }
+              }}
+              className="whitespace-nowrap flex-shrink-0 bg-white hover:bg-slate-50 border border-rose-200 text-rose-600 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
+              Googleでログインして作成
+            </button>
+          </div>
+        )}
+
         {/* =============== タブ1: 基本設定とAI =============== */}
         {activeTab === 'meta' && (
           <div className="space-y-6 animate-fade-in">
@@ -1654,67 +1688,90 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
 
                         {content.type !== 'survey' && (
                           <>
-                            <div className="flex gap-3">
-                              <div className="flex-1">
-                                <label className="block text-xs font-bold text-slate-600 mb-1">📯 判定に使うパラメータ</label>
+                            <div className="flex flex-col gap-3">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">判定方法</label>
                                 <select
-                                  value={result.conditionAttribute}
+                                  value={result.conditionType || 'threshold'}
                                   onChange={(e) => {
-                                    const updated = content.results.map(r => r.id === result.id ? { ...r, conditionAttribute: e.target.value } : r);
+                                    const val = e.target.value as any;
+                                    const updated = content.results.map(r => r.id === result.id ? { ...r, conditionType: val } : r);
                                     setContent({ ...content, results: updated });
                                   }}
                                   className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700"
                                 >
-                                  {content.type === 'quiz' ? (
-                                    <option value="correct">正解数 (correct)</option>
-                                  ) : (
-                                    content.scoringAttributes.map(attr => (
-                                      <option key={attr} value={attr}>{attr}</option>
-                                    ))
-                                  )}
+                                  <option value="threshold">最低点数 (単一パラメータ)</option>
+                                  <option value="expression">高度な条件式 (例: A + B &gt;= 5)</option>
+                                  <option value="max_expression">計算式の最大値 (例: Ni + Ti が一番高い結果になる)</option>
                                 </select>
                               </div>
 
-                              <div className="w-24">
-                                <label className="block text-xs font-bold text-slate-600 mb-1">最低点数要件</label>
-                                <input
-                                  type="number"
-                                  value={result.conditionScoreMin}
-                                  onChange={(e) => {
-                                    const updated = content.results.map(r => r.id === result.id ? { ...r, conditionScoreMin: parseInt(e.target.value) || 0 } : r);
-                                    setContent({ ...content, results: updated });
-                                  }}
-                                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 text-center focus:outline-none"
-                                />
-                              </div>
-                            </div>
+                              {(result.conditionType === 'threshold' || !result.conditionType) && (
+                                <div className="flex gap-3">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-bold text-slate-600 mb-1">📯 判定に使うパラメータ</label>
+                                    <select
+                                      value={result.conditionAttribute}
+                                      onChange={(e) => {
+                                        const updated = content.results.map(r => r.id === result.id ? { ...r, conditionAttribute: e.target.value } : r);
+                                        setContent({ ...content, results: updated });
+                                      }}
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700"
+                                    >
+                                      {content.type === 'quiz' ? (
+                                        <option value="correct">正解数 (correct)</option>
+                                      ) : (
+                                        content.scoringAttributes.map(attr => (
+                                          <option key={attr} value={attr}>{attr}</option>
+                                        ))
+                                      )}
+                                    </select>
+                                  </div>
+  
+                                  <div className="w-24">
+                                    <label className="block text-xs font-bold text-slate-600 mb-1">最低点数要件</label>
+                                    <input
+                                      type="number"
+                                      value={result.conditionScoreMin}
+                                      onChange={(e) => {
+                                        const updated = content.results.map(r => r.id === result.id ? { ...r, conditionScoreMin: parseInt(e.target.value) || 0 } : r);
+                                        setContent({ ...content, results: updated });
+                                      }}
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 text-center focus:outline-none"
+                                    />
+                                  </div>
+                                </div>
+                              )}
 
-                            {/* 高度な判定式（任意） */}
-                            <div>
-                              <label className="block text-[10px] font-bold text-indigo-600 mb-1">
-                                ⚙️ 【上級】高度な条件式（任意・優先されます）
-                              </label>
-                              <input
-                                type="text"
-                                value={result.advancedCondition || ""}
-                                onChange={(e) => {
-                                  const updated = content.results.map(r => r.id === result.id ? { ...r, advancedCondition: e.target.value } : r);
-                                  setContent({ ...content, results: updated });
-                                }}
-                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none"
-                                placeholder="例: Ti + Ne >= 5"
-                              />
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                <span className="text-[9px] text-slate-400 font-bold mr-1 self-center">テンプレ:</span>
-                                {content.scoringAttributes.length >= 2 ? (
-                                  <>
-                                    <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: `${content.scoringAttributes[0]} + ${content.scoringAttributes[1]} >= 5` } : r)})} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-mono border border-slate-200 transition-colors">加算</button>
-                                    <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: `${content.scoringAttributes[0]} > ${content.scoringAttributes[1]}` } : r)})} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-mono border border-slate-200 transition-colors">比較</button>
-                                  </>
-                                ) : null}
-                                <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: `correct === 5` } : r)})} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-mono border border-slate-200 transition-colors">全問正解</button>
-                                <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: "" } : r)})} className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded text-[9px] font-mono border border-rose-100 ml-auto transition-colors">クリア</button>
-                              </div>
+                              {(result.conditionType === 'expression' || result.conditionType === 'max_expression') && (
+                                <div>
+                                  <label className="block text-[10px] font-bold text-indigo-600 mb-1">
+                                    ⚙️ 【上級】高度な条件式
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={result.advancedCondition || ""}
+                                    onChange={(e) => {
+                                      const updated = content.results.map(r => r.id === result.id ? { ...r, advancedCondition: e.target.value } : r);
+                                      setContent({ ...content, results: updated });
+                                    }}
+                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none"
+                                    placeholder={result.conditionType === 'max_expression' ? "例: Ni + Ti" : "例: Ti + Ne >= 5"}
+                                  />
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    <span className="text-[9px] text-slate-400 font-bold mr-1 self-center">テンプレ:</span>
+                                    {content.scoringAttributes.length >= 2 ? (
+                                      <>
+                                        <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: `${content.scoringAttributes[0]} + ${content.scoringAttributes[1]}` + (result.conditionType === 'max_expression' ? "" : " >= 5") } : r)})} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-mono border border-slate-200 transition-colors">加算</button>
+                                        {result.conditionType !== 'max_expression' && (
+                                          <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: `${content.scoringAttributes[0]} > ${content.scoringAttributes[1]}` } : r)})} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-[9px] font-mono border border-slate-200 transition-colors">比較</button>
+                                        )}
+                                      </>
+                                    ) : null}
+                                    <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: "" } : r)})} className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded text-[9px] font-mono border border-rose-100 ml-auto transition-colors">クリア</button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </>
                         )}

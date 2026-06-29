@@ -14,16 +14,23 @@ interface ContentPlayerProps {
   season?: { name: string; accentColor: string; bgGradient?: string; bgColor?: string; textColor?: string; accentBg?: string; icon: string };
   content: ShitsumonKobo_Content;
   onClose: () => void;
+  initialShowDashboard?: boolean;
 }
 
-export default function ContentPlayer({ content, season, currentUser, onClose }: ContentPlayerProps) {
+export default function ContentPlayer({ content, season, currentUser, onClose, initialShowDashboard = false }: ContentPlayerProps) {
   // プレイ基本設定
   const [useRandomOrder, setUseRandomOrder] = useState(false);
   const [maxQuestionLimit, setMaxQuestionLimit] = useState<number>(content.questions.length);
   const [isStarted, setIsStarted] = useState(false);
   const [showEncounter, setShowEncounter] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(initialShowDashboard);
   const [playLogs, setPlayLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (initialShowDashboard) {
+      loadDashboard();
+    }
+  }, [initialShowDashboard]);
   const [surveyStats, setSurveyStats] = useState<any[]>([]);
   const [feedbackModal, setFeedbackModal] = useState<{ show: boolean, isCorrect?: boolean, explanation?: string, type: 'quiz' | 'survey', mockStats?: Record<string, number> } | null>(null);
   const [isFinished, setIsFinished] = useState(false);
@@ -442,6 +449,32 @@ export default function ContentPlayer({ content, season, currentUser, onClose }:
       }
     }
 
+    // 先に max_expression を評価する (指定された計算式の値が一番高いものを結果にする)
+    const maxExprResults = content.results.filter(r => r.conditionType === 'max_expression');
+    if (maxExprResults.length > 0) {
+      let bestResult = maxExprResults[0];
+      let maxVal = -Infinity;
+      maxExprResults.forEach(r => {
+        if (r.advancedCondition) {
+          try {
+            let evalStr = r.advancedCondition;
+            Object.entries(finalScores).forEach(([k, v]) => {
+              evalStr = evalStr.replace(new RegExp(`\\b${k}\\b`, 'g'), v.toString());
+            });
+            evalStr = evalStr.replace(/[a-zA-Z_]+/g, '0'); // 未定義の変数は0にする
+            const val = Number(new Function('return ' + evalStr)());
+            if (!isNaN(val) && val > maxVal) {
+              maxVal = val;
+              bestResult = r;
+            }
+          } catch(e) {}
+        }
+      });
+      if (maxVal !== -Infinity) {
+        return bestResult;
+      }
+    }
+
     // 評価
     let matchOptions = content.results.filter(r => {
       const type = r.conditionType || 'threshold';
@@ -543,9 +576,15 @@ export default function ContentPlayer({ content, season, currentUser, onClose }:
     let shareText = "";
     if (content.type === 'survey') {
       shareText = `【しつもん工房 アンケート】\nお題：${content.title}\n回答しました！\n\nみんなも「しつもん工房」で回答してね！`;
+    } else if (content.type === 'quiz') {
+      if (!finalResult) return;
+      const totalQ = playQuestions.length;
+      const correctQ = scores['correct'] || 0;
+      const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
+      shareText = `【しつもん工房 クイズ】\nお題：${content.title}\n私の正答率は【${accuracy}%】でした！ (${correctQ}/${totalQ}問正解)\n結果ランク：${finalResult.title}\n\nみんなも「しつもん工房」で挑戦してみよう！`;
     } else {
       if (!finalResult) return;
-      shareText = `【しつもん工房 診断発表】\nお題：${content.title}\n結果：${finalResult.title}\n\n${finalResult.description.substring(0, 80)}…\nみんなも「しつもん工房」で自分の個性と繋がって遊んでみよう！`;
+      shareText = `【しつもん工房 診断発表】\nお題：${content.title}\n私の診断結果は「${finalResult.title}」でした！\n\n${finalResult.description.substring(0, 80)}…\nみんなも「しつもん工房」で遊んでみよう！`;
     }
     const appUrl = `${window.location.origin}/?id=${content.id}`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`;
@@ -649,6 +688,136 @@ export default function ContentPlayer({ content, season, currentUser, onClose }:
       {/* メインプレイグラウンド */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col justify-center space-y-6">
         
+        {showDashboard ? (
+          <div className="max-w-3xl mx-auto w-full space-y-6 animate-fade-in pb-10">
+            <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+              <div className="flex justify-between items-center border-b border-sky-100 pb-4">
+                <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                  <BarChart className="text-sky-500" />
+                  プレイ履歴・統計ダッシュボード
+                </h2>
+                <button onClick={() => setShowDashboard(false)} className="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-xl hover:bg-slate-200 transition-colors">
+                  戻る
+                </button>
+              </div>
+
+              {playLogs.length === 0 ? (
+                <div className="text-center py-20 text-slate-400">まだプレイ記録がありません。</div>
+              ) : (
+                <div className="space-y-8">
+                  {/* 総プレイ数 */}
+                  <div className="bg-sky-50 rounded-2xl p-6 text-center">
+                    <p className="text-sm font-bold text-sky-600 mb-1">総プレイ数</p>
+                    <p className="text-4xl font-black text-sky-700">{playLogs.length} 回</p>
+                  </div>
+
+                  {/* 結果の分布 */}
+                  {content.type !== 'survey' && (
+                    <div className="space-y-3">
+                      <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                        <span className="text-lg">🏆</span> 結果の分布
+                      </h3>
+                      <div className="grid gap-2">
+                        {content.results.map(r => {
+                          const count = playLogs.filter(log => log.resultId === r.id).length;
+                          const percent = Math.round((count / playLogs.length) * 100) || 0;
+                          return (
+                            <div key={r.id} className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                              <div className="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                                <span>{r.title}</span>
+                                <span>{percent}% ({count}回)</span>
+                              </div>
+                              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div className="bg-sky-400 h-full rounded-full" style={{ width: `${percent}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 質問ごとの回答分布 */}
+                  {content.questions.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                        <span className="text-lg">📊</span> 質問ごとの回答傾向
+                      </h3>
+                      {content.questions.map((q, i) => {
+                        let totalAnswers = 0;
+                        const counts: Record<string, number> = {};
+                        q.choices?.forEach(c => counts[c.id] = 0);
+
+                        playLogs.forEach(log => {
+                          const ans = log.answers?.[q.id];
+                          if (ans !== undefined && ans !== null && ans !== '') {
+                            if (typeof ans === 'string') {
+                              counts[ans] = (counts[ans] || 0) + 1;
+                              totalAnswers++;
+                            } else if (typeof ans === 'object') {
+                              // checkbox handling
+                              let answered = false;
+                              Object.entries(ans).forEach(([cId, val]) => {
+                                if (val) {
+                                  counts[cId] = (counts[cId] || 0) + 1;
+                                  answered = true;
+                                }
+                              });
+                              if (answered) totalAnswers++;
+                            } else if (typeof ans === 'number') {
+                              counts[ans.toString()] = (counts[ans.toString()] || 0) + 1;
+                              totalAnswers++;
+                            }
+                          }
+                        });
+
+                        return (
+                          <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                            <h4 className="text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">
+                              Q{i + 1}. {q.text}
+                            </h4>
+                            {totalAnswers === 0 ? (
+                              <p className="text-[10px] text-slate-400">回答データなし</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {q.choices?.map(c => {
+                                  const count = counts[c.id] || 0;
+                                  const pct = Math.round((count / totalAnswers) * 100);
+                                  return (
+                                    <div key={c.id} className="space-y-1">
+                                      <div className="flex justify-between text-[10px] text-slate-500">
+                                        <span className="line-clamp-1 flex-1 pr-2">{c.text}</span>
+                                        <span className="whitespace-nowrap font-mono">{pct}% ({count})</span>
+                                      </div>
+                                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                        <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${pct}%` }} />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {q.type === 'slider' && (
+                                  <div className="text-[10px] text-slate-500">
+                                    スライダーの平均値など（準備中）
+                                  </div>
+                                )}
+                                {q.type === 'text' && (
+                                  <div className="text-[10px] text-slate-500">
+                                    自由記述回答は個別ログを確認してください。
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
         {/* =============== 未スタートの説明画面 =============== */}
         {!isStarted && !isFinished && (
           <div className="max-w-xl mx-auto w-full space-y-6 text-center animate-fade-in">
@@ -1323,6 +1492,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose }:
             
       </div>
           </div>
+        )}
+        </>
         )}
 
       </div>

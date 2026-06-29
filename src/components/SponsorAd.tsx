@@ -6,9 +6,8 @@ export default function SponsorAd() {
   useEffect(() => {
     if (adRef.current && adRef.current.children.length === 0) {
       const script = document.createElement('script');
-      script.src = 'https://adm.shinobi.jp/st/auto.js';
+      script.src = 'https://adm.shinobi.jp/o/7782b8af3fc6cbc27156ec26038e53a1';
       script.async = true;
-      script.setAttribute('data-admax-id', '97c9ec170549cc20f63d95c78dd0c110');
       adRef.current.appendChild(script);
     }
   }, []);
