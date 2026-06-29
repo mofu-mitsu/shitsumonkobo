@@ -643,6 +643,10 @@ async function start() {
 
   // HTMLリクエストをインターセプトしてOGPを動的に埋め込む
   app.get("*", async (req, res, next) => {
+    if (req.url.startsWith('/api') || req.url === '/admax.html') {
+      return next();
+    }
+    
     if (req.headers.accept?.includes("text/html")) {
       const sharedId = req.query.id as string;
       let title = "しつもん工房";

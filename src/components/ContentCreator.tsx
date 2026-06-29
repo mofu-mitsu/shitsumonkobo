@@ -1727,6 +1727,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 >
                                   <option value="max_expression">計算式の最大値 (例: Ni + Ti が一番高い結果になる)</option>
                                   <option value="threshold">最低点数 (単一パラメータ)</option>
+                                  <option value="attribute_order">属性のスコア順 (例: A &gt; B &gt; C)</option>
                                   <option value="expression">高度な条件式 (例: A + B &gt;= 5)</option>
                                 </select>
                               </div>
@@ -1743,6 +1744,27 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 />
                                 <span className="text-[10px] text-slate-500 font-bold">どの条件にも当てはまらない時に出す結果（フォールバック）にする</span>
                               </div>
+
+                              {result.conditionType === 'attribute_order' && !result.isFallback && (
+                                <div className="mt-2">
+                                  <label className="block text-xs font-bold text-slate-600 mb-1">🔀 並び替え条件</label>
+                                  <input
+                                    type="text"
+                                    value={result.conditionOrder?.join(' > ') || ''}
+                                    onChange={(e) => {
+                                      const orderArr = e.target.value.split(/[^a-zA-Z0-9_]+/).filter(Boolean);
+                                      const updated = content.results.map(r => r.id === result.id ? { ...r, conditionOrder: orderArr } : r);
+                                      setContent({ ...content, results: updated });
+                                    }}
+                                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-sky-400"
+                                    placeholder="例: L > V > F > E"
+                                  />
+                                  <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                                    タイトルや説明文に <code className="bg-slate-100 text-pink-500 px-1 rounded">{"{SORT}"}</code> と入れると、判定された実際の並び替え結果が自動で挿入されます！<br/>
+                                    <span className="opacity-80">※ 記号（&gt;、,、-、空白）は自動で区切られます。</span>
+                                  </p>
+                                </div>
+                              )}
 
                               {(result.conditionType === 'threshold' || !result.conditionType) && !result.isFallback && (
                                 <div className="flex gap-3">

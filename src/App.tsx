@@ -373,130 +373,133 @@ export default function App() {
  
       {/* ヘッダー */}
       <header className="border-b border-sky-100/80 bg-white/80 backdrop-blur-md sticky top-0 z-40 select-none shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
-          
-          <div 
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => {
-              playSound("synth");
-              setAppMode('idle');
-              setActiveView('gallery');
-            }}
-          >
-            <div className={`bg-gradient-to-tr ${season.tagGradient} text-white font-black text-xs py-1.5 px-3 rounded-2xl shadow-md tracking-wider flex items-center gap-1.5`}>
-              <span>{season.icon}</span> しつもん工房
-            </div>
-            <h1 className={`text-xl font-black bg-clip-text text-transparent bg-gradient-to-r ${season.titleGradient} tracking-tight pl-1`}>
-              みんなの遊び場
-            </h1>
-          </div>
- 
-          {/* PC用右側エリア */}
-          <div className="hidden sm:flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              {currentUser ? (
-                <div className="flex items-center gap-2">
-                  <img src={currentUser.photoURL || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
-                  <span className="text-xs font-bold text-slate-600 max-w-[100px] truncate">{currentUser.displayName}</span>
-                  <button onClick={logout} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
-                </div>
-              ) : (
-                <button 
-                  onClick={async () => {
-                    try {
-                      await loginWithGoogle();
-                    } catch (err: any) {
-                      if (err?.code === 'auth/operation-not-allowed') {
-                        alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
-                      } else {
-                        console.log("Login popup closed or failed:", err);
-                      }
-                    }
-                  }}
-                  className="bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                >
-                  Googleでログイン
-                </button>
-              )}
-            </div>
-
-            {/* ビュー・タブ切り替え */}
-            {appMode === 'idle' && (
-              <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-3xl text-xs font-bold gap-1 shadow-inner">
-                <button 
-                  onClick={() => { setActiveView('gallery'); playSound("synth"); }}
-                  className={`px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'gallery' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Compass size={14} /> 公開ギャラリー
-                </button>
-                <button 
-                  onClick={() => { setActiveView('studio'); playSound("synth"); }}
-                  className={`px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'studio' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Pocket size={14} /> マイスタジオ
-                </button>
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex justify-between items-center w-full">
+            <div 
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => {
+                playSound("synth");
+                setAppMode('idle');
+                setActiveView('gallery');
+              }}
+            >
+              <div className={`bg-gradient-to-tr ${season.tagGradient} text-white font-black text-xs py-1.5 px-3 rounded-2xl shadow-md tracking-wider flex items-center gap-1.5`}>
+                <span>{season.icon}</span> しつもん工房
               </div>
-            )}
-
-            <button
-              onClick={launchNewCreator}
-              className={`bg-gradient-to-r ${season.buttonGradient} text-white text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-1.5 transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer`}
-            >
-              <Plus size={14} strokeWidth={3} /> 新しいしつもんを作る
-            </button>
-            <button
-              onClick={() => setIsHelpOpen(true)}
-              className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-xl transition-colors cursor-pointer"
-              title="使い方・ヘルプ"
-            >
-              <HelpCircle size={20} />
-            </button>
+              <h1 className={`text-xl font-black bg-clip-text text-transparent bg-gradient-to-r ${season.titleGradient} tracking-tight pl-1 hidden sm:block`}>
+                みんなの遊び場
+              </h1>
+            </div>
+  
+            {/* PC用右側エリア */}
+            <div className="hidden sm:flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {currentUser ? (
+                  <div className="flex items-center gap-2">
+                    <img src={currentUser.photoURL || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
+                    <span className="text-xs font-bold text-slate-600 max-w-[100px] truncate">{currentUser.displayName}</span>
+                    <button onClick={logout} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={async () => {
+                      try {
+                        await loginWithGoogle();
+                      } catch (err: any) {
+                        if (err?.code === 'auth/operation-not-allowed') {
+                          alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                        } else {
+                          console.log("Login popup closed or failed:", err);
+                        }
+                      }
+                    }}
+                    className="bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                  >
+                    Googleでログイン
+                  </button>
+                )}
+              </div>
+  
+              {/* PC用ビュー・タブ切り替え */}
+              {appMode === 'idle' && (
+                <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-3xl text-xs font-bold gap-1 shadow-inner">
+                  <button 
+                    onClick={() => { setActiveView('gallery'); playSound("synth"); }}
+                    className={`px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'gallery' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <Compass size={14} /> 公開ギャラリー
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('studio'); playSound("synth"); }}
+                    className={`px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'studio' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <Pocket size={14} /> マイスタジオ
+                  </button>
+                </div>
+              )}
+  
+              <button
+                onClick={launchNewCreator}
+                className={`bg-gradient-to-r ${season.buttonGradient} text-white text-xs font-bold px-4 py-2 rounded-2xl flex items-center gap-1.5 transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer`}
+              >
+                <Plus size={14} strokeWidth={3} /> 新しいしつもんを作る
+              </button>
+              <button
+                onClick={() => setIsHelpOpen(true)}
+                className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-xl transition-colors cursor-pointer"
+                title="使い方・ヘルプ"
+              >
+                <HelpCircle size={20} />
+              </button>
+            </div>
+  
+            {/* スマホ用アイコンボタン（ハンバーガー等） */}
+            <div className="sm:hidden flex items-center gap-2">
+              <button
+                onClick={() => setIsHelpOpen(true)}
+                className="p-2 text-slate-400 hover:text-sky-500 rounded-xl transition-colors cursor-pointer"
+              >
+                <HelpCircle size={24} />
+              </button>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
-
-          {/* スマホ用ハンバーガーボタン */}
-          <div className="sm:hidden flex items-center gap-2">
-            <button
-              onClick={() => setIsHelpOpen(true)}
-              className="p-2 text-slate-400 hover:text-sky-500 rounded-xl transition-colors cursor-pointer"
-            >
-              <HelpCircle size={24} />
-            </button>
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
+          
+          {/* スマホ用常時表示ビュー・タブ切り替え */}
+          {appMode === 'idle' && (
+            <div className="sm:hidden mt-3 flex bg-slate-100 border border-slate-200 p-1 rounded-3xl text-xs font-bold gap-1 shadow-inner">
+              <button 
+                onClick={() => { setActiveView('gallery'); playSound("synth"); }}
+                className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
+                  activeView === 'gallery' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Compass size={14} /> ギャラリー
+              </button>
+              <button 
+                onClick={() => { setActiveView('studio'); playSound("synth"); }}
+                className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
+                  activeView === 'studio' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Pocket size={14} /> スタジオ
+              </button>
+            </div>
+          )}
         </div>
-
+ 
         {/* スマホ用展開メニュー */}
         {isMobileMenuOpen && (
           <div className="sm:hidden bg-white border-b border-slate-200 px-4 py-3 flex flex-col gap-3 shadow-md animate-in slide-in-from-top-2">
-            {appMode === 'idle' && (
-              <div className="flex bg-slate-100 border border-slate-200 p-1 rounded-3xl text-xs font-bold gap-1 shadow-inner">
-                <button 
-                  onClick={() => { setActiveView('gallery'); playSound("synth"); setIsMobileMenuOpen(false); }}
-                  className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
-                    activeView === 'gallery' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Compass size={14} /> ギャラリー
-                </button>
-                <button 
-                  onClick={() => { setActiveView('studio'); playSound("synth"); setIsMobileMenuOpen(false); }}
-                  className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
-                    activeView === 'studio' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Pocket size={14} /> スタジオ
-                </button>
-              </div>
-            )}
             <button
               onClick={() => { launchNewCreator(); setIsMobileMenuOpen(false); }}
               className={`bg-gradient-to-r ${season.buttonGradient} w-full text-white text-xs font-bold px-4 py-3 rounded-2xl flex justify-center items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer`}

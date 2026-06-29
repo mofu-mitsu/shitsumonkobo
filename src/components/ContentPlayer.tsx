@@ -574,7 +574,28 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     };
   };
 
-  const finalResult = isFinished && content.type !== 'survey' ? calculateResult() : null;
+  const getFinalResult = () => {
+    const rawResult = calculateResult();
+    if (!rawResult) return null;
+
+    const attrs = content.scoringAttributes && content.scoringAttributes.length > 0
+      ? content.scoringAttributes
+      : Object.keys(scores).filter(k => k !== 'correct');
+      
+    const sortStr = attrs
+      .map(attr => ({ attr, score: scores[attr] || 0 }))
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.attr)
+      .join(' > ');
+
+    return {
+      ...rawResult,
+      title: rawResult.title.replace(/\{SORT\}/g, sortStr).replace(/\{SORTED\}/g, sortStr),
+      description: rawResult.description.replace(/\{SORT\}/g, sortStr).replace(/\{SORTED\}/g, sortStr)
+    };
+  };
+
+  const finalResult = isFinished && content.type !== 'survey' ? getFinalResult() : null;
 
   // 終了時にログ保存
   const loadSurveyStats = async () => {
