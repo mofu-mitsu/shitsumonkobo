@@ -334,7 +334,24 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
            }
         }
       } else if (q.type === 'slider') {
-         const val = sliderAnswers[q.id] || 3;
+         // スライダーの値を取得。未回答の場合はデフォルト値を使用 (中央値など)
+         const val = sliderAnswers[q.id] !== undefined ? sliderAnswers[q.id] : ((q.sliderMin || 0) + (q.sliderMax || 10)) / 2;
+         const min = q.sliderMin ?? 0;
+         const max = q.sliderMax ?? 10;
+         const range = Math.max(1, max - min);
+         
+         const rightRatio = Math.max(0, Math.min(1, (val - min) / range));
+         const leftRatio = 1 - rightRatio;
+
+         // 左右ラベルそれぞれの加点設定 (新方式)
+         if (q.sliderLeftAttribute && q.sliderLeftMaxScore) {
+           finalScores[q.sliderLeftAttribute] = (finalScores[q.sliderLeftAttribute] || 0) + (leftRatio * q.sliderLeftMaxScore);
+         }
+         if (q.sliderRightAttribute && q.sliderRightMaxScore) {
+           finalScores[q.sliderRightAttribute] = (finalScores[q.sliderRightAttribute] || 0) + (rightRatio * q.sliderRightMaxScore);
+         }
+
+         // 値比例乗算 (後方互換用)
          if (q.sliderScores) {
             Object.entries(q.sliderScores).forEach(([attr, multiplier]) => {
               finalScores[attr] = (finalScores[attr] || 0) + (val * Number(multiplier));

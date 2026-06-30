@@ -68,7 +68,11 @@ export interface ShitsumonKobo_Question {
   sliderStep: number;
   sliderLeftLabel: string; // スライダーの左側ラベル (そう思わない など)
   sliderRightLabel: string; // スライダーの右側ラベル (そう思う など)
-  sliderScores: Record<string, number>; // スライダーの値に比例して乗算される属性加点設定
+  sliderScores: Record<string, number>; // (後方互換用)スライダーの値に比例して乗算される属性加点設定
+  sliderLeftAttribute?: string; // 左に振り切った時の加点先
+  sliderLeftMaxScore?: number; // 左に振り切った時の最大加点
+  sliderRightAttribute?: string; // 右に振り切った時の加点先
+  sliderRightMaxScore?: number; // 右に振り切った時の最大加点
   textRules: ShitsumonKobo_TextRule[];
   pairItems: ShitsumonKobo_PairItem[];
   pairingAttributeScores?: Record<string, number>;

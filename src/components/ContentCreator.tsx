@@ -198,6 +198,10 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
       sliderStep: 1,
       sliderLeftLabel: "思わない",
       sliderRightLabel: "そう思う",
+      sliderLeftAttribute: "",
+      sliderLeftMaxScore: 5,
+      sliderRightAttribute: "",
+      sliderRightMaxScore: 5,
       sliderScores: {},
       choices: defaultChoices,
       textRules: qType === 'text' ? [
@@ -1143,54 +1147,67 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">左側のラベル (例：思わない)</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                          <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <label className="block text-xs font-bold text-slate-700">⬅️ 左側のラベル</label>
                             <input
                               type="text"
                               value={q.sliderLeftLabel}
                               onChange={(e) => updateQuestion(q.id, { sliderLeftLabel: e.target.value })}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none"
+                              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none"
+                              placeholder="例：感情的"
                             />
+                            <div className="pt-2 border-t border-slate-200 mt-2">
+                              <label className="block text-[10px] text-slate-500 font-bold mb-1">左端に近づいた時の加点先</label>
+                              <select
+                                value={q.sliderLeftAttribute || ""}
+                                onChange={(e) => updateQuestion(q.id, { sliderLeftAttribute: e.target.value })}
+                                className="w-full bg-white border border-slate-200 text-xs px-2 py-1.5 rounded-lg mb-2"
+                              >
+                                <option value="">加点しない</option>
+                                {content.scoringAttributes.map(a => <option key={a} value={a}>{a}</option>)}
+                              </select>
+                              <div className="flex justify-between items-center">
+                                <label className="text-[10px] text-slate-500 font-bold">最大加点 (一番左の時)</label>
+                                <input
+                                  type="number"
+                                  value={q.sliderLeftMaxScore || 0}
+                                  onChange={(e) => updateQuestion(q.id, { sliderLeftMaxScore: parseFloat(e.target.value) || 0 })}
+                                  className="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-mono text-center"
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-[10px] text-slate-500 mb-1">右側のラベル (例：とても思う)</label>
+
+                          <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <label className="block text-xs font-bold text-slate-700">➡️ 右側のラベル</label>
                             <input
                               type="text"
                               value={q.sliderRightLabel}
                               onChange={(e) => updateQuestion(q.id, { sliderRightLabel: e.target.value })}
-                              className="w-full bg-slate-55 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none"
+                              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none"
+                              placeholder="例：論理的"
                             />
-                          </div>
-                        </div>
-
-                        {/* スライダーの得点係数 */}
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] text-slate-500 font-bold block">
-                            スライダー値比例の乗数加点 (選択された数値 × 係数 = 加点)
-                          </span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {content.scoringAttributes.map((attr) => {
-                              const scoreVal = q.sliderScores[attr] || 0;
-                              return (
-                                <div key={attr} className="bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 flex flex-col justify-center">
-                                  <div className="flex justify-between text-[10px] text-slate-600">
-                                    <span className="font-bold">{attr}</span>
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      value={scoreVal}
-                                      onChange={(e) => {
-                                        const nextScores = { ...q.sliderScores };
-                                        nextScores[attr] = parseFloat(e.target.value) || 0;
-                                        updateQuestion(q.id, { sliderScores: nextScores });
-                                      }}
-                                      className="bg-white border border-slate-200 text-emerald-600 font-bold font-mono text-center text-xs w-12 rounded"
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            })}
+                            <div className="pt-2 border-t border-slate-200 mt-2">
+                              <label className="block text-[10px] text-slate-500 font-bold mb-1">右端に近づいた時の加点先</label>
+                              <select
+                                value={q.sliderRightAttribute || ""}
+                                onChange={(e) => updateQuestion(q.id, { sliderRightAttribute: e.target.value })}
+                                className="w-full bg-white border border-slate-200 text-xs px-2 py-1.5 rounded-lg mb-2"
+                              >
+                                <option value="">加点しない</option>
+                                {content.scoringAttributes.map(a => <option key={a} value={a}>{a}</option>)}
+                              </select>
+                              <div className="flex justify-between items-center">
+                                <label className="text-[10px] text-slate-500 font-bold">最大加点 (一番右の時)</label>
+                                <input
+                                  type="number"
+                                  value={q.sliderRightMaxScore || 0}
+                                  onChange={(e) => updateQuestion(q.id, { sliderRightMaxScore: parseFloat(e.target.value) || 0 })}
+                                  className="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-mono text-center"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
