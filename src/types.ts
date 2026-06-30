@@ -162,6 +162,9 @@ export interface ShitsumonKobo_Content {
   isPublic: boolean;
   themeColorMode: 'auto' | 'custom';
   customColor: string; // 1600万色から自由に設定できるHEXカラー
+  bgmMode?: 'none' | 'preset' | 'custom';
+  bgmPreset?: 'pop' | 'relax' | 'cyber' | '8bit';
+  bgmUrl?: string; // custom URL
   questions: ShitsumonKobo_Question[];
   gachaItems: ShitsumonKobo_GachaItem[];
   scoringAttributes: string[]; // ['Ni', 'Ti', 'Fe', 'Se'] などの属性リスト

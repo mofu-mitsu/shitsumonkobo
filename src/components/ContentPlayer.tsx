@@ -662,6 +662,57 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     setShowDashboard(true);
   };
 
+  // ---------------- BGM (バックグラウンドミュージック) ----------------
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    let src = '';
+    if (content.bgmMode === 'custom' && content.bgmUrl) {
+      src = content.bgmUrl;
+    } else if (content.bgmMode === 'preset' && content.bgmPreset) {
+      // 提供可能なフリーBGMなどのURL。今回は仮のモック用短め音源などを指定。
+      if (content.bgmPreset === 'relax') src = 'https://cdn.pixabay.com/download/audio/2022/02/07/audio_c6f2a67c52.mp3';
+      else if (content.bgmPreset === 'pop') src = 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3';
+      else if (content.bgmPreset === 'cyber') src = 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b8175d27.mp3';
+      else if (content.bgmPreset === '8bit') src = 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3';
+    }
+
+    if (src) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(src);
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.3;
+      } else {
+        audioRef.current.src = src;
+      }
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [content.bgmMode, content.bgmPreset, content.bgmUrl]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isBgmPlaying) {
+        audioRef.current.play().catch(e => console.warn("BGM play blocked", e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isBgmPlaying]);
+
+  const toggleBgm = () => {
+    setIsBgmPlaying(!isBgmPlaying);
+  };
+
   const handleXShare = () => {
     let shareText = "";
     if (content.type === 'survey') {
@@ -768,12 +819,23 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
             {content.title}
           </h3>
         </div>
-        <button 
-          onClick={onClose}
-          className="text-xs bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-200 transition-colors shadow-sm cursor-pointer animate-fade-in"
-        >
-          ぬける
-        </button>
+        <div className="flex items-center gap-2">
+          {content.bgmMode && content.bgmMode !== 'none' && (
+            <button 
+              onClick={toggleBgm}
+              className="text-xs flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 bg-white hover:bg-slate-50 transition-colors shadow-sm"
+              title={isBgmPlaying ? "BGMを止める" : "BGMを再生する"}
+            >
+              {isBgmPlaying ? "🔊" : "🔇"}
+            </button>
+          )}
+          <button 
+            onClick={onClose}
+            className="text-xs bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-200 transition-colors shadow-sm cursor-pointer animate-fade-in"
+          >
+            ぬける
+          </button>
+        </div>
       </div>
 
       {/* メインプレイグラウンド */}
@@ -1216,8 +1278,10 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                       isAnswered = !!textAnswers[currentQ.id];
                     } else if (currentQ.type === 'checkbox') {
                       isAnswered = Object.values(checkboxAnswers[currentQ.id] || {}).some(val => val === true);
-                    } else if (currentQ.type === 'slider' || currentQ.type === 'pairing') {
-                      isAnswered = true; // 常に値がある or ペアゲーム
+                    } else if (currentQ.type === 'slider') {
+                      isAnswered = true; // 常に値がある
+                    } else if (currentQ.type === 'pairing') {
+                      isAnswered = pairingScores[currentQ.id] !== undefined;
                     } else if (currentQ.type === 'text') {
                       isAnswered = !!(textAnswers[currentQ.id] || "").trim();
                     }

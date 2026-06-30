@@ -107,7 +107,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
   }, [leftList, rightList, connections]);
 
   // 左側のノードクリック
-  const handleLeftClick = (id: string, e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerDown = (id: string, e: React.PointerEvent) => {
     if (readOnly) return;
     playSound("synth");
     
@@ -121,15 +121,17 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
     setSelectedLeftId(id);
     setSelectedRightId(null);
 
+    // ポインターをキャプチャして要素外でも追従できるようにする
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+
     // ドラッグのための初期位置を設定
     if (containerRef.current) {
       const svgElement = containerRef.current.querySelector('svg');
       const baseRect = svgElement ? svgElement.getBoundingClientRect() : containerRef.current.getBoundingClientRect();
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       const pos = {
-        x: clientX - baseRect.left,
-        y: clientY - baseRect.top
+        x: e.clientX - baseRect.left,
+        y: e.clientY - baseRect.top
       };
       setDragStartPos(pos);
       setDragCurrentPos(pos);
@@ -178,24 +180,26 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
   };
 
   // マウス/タッチ移動中の線引っ張りトレース
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!selectedLeftId || !dragStartPos || !containerRef.current) return;
     const svgElement = containerRef.current.querySelector('svg');
     const baseRect = svgElement ? svgElement.getBoundingClientRect() : containerRef.current.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     setDragCurrentPos({
-      x: clientX - baseRect.left,
-      y: clientY - baseRect.top
+      x: e.clientX - baseRect.left,
+      y: e.clientY - baseRect.top
     });
   };
 
   // マウス/タッチを離してキャンセル、または接続
-  const handleRelease = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (selectedLeftId && dragCurrentPos) {
-      const clientX = "changedTouches" in e ? (e as React.TouchEvent).changedTouches[0].clientX : (e as React.MouseEvent).clientX;
-      const clientY = "changedTouches" in e ? (e as React.TouchEvent).changedTouches[0].clientY : (e as React.MouseEvent).clientY;
-      const element = document.elementFromPoint(clientX, clientY);
+      // release pointer capture
+      const target = e.target as HTMLElement;
+      if (target.hasPointerCapture(e.pointerId)) {
+        target.releasePointerCapture(e.pointerId);
+      }
+      
+      const element = document.elementFromPoint(e.clientX, e.clientY);
       
       const rightNode = element?.closest('[data-right-id]');
       if (rightNode) {
@@ -217,10 +221,9 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
       ref={containerRef}
       className="relative w-full max-w-lg mx-auto bg-white/95 backdrop-blur-md rounded-3xl border border-sky-100 p-6 select-none shadow-xl shadow-sky-100/40"
       style={{ touchAction: 'none' }}
-      onMouseMove={handleMove}
-      onTouchMove={handleMove}
-      onMouseUp={handleRelease}
-      onTouchEnd={handleRelease}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-sm font-bold text-cyan-800 font-sans">
@@ -328,8 +331,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
                       ? "bg-emerald-500 border-white" 
                       : "bg-sky-250 bg-sky-300 border-white hover:scale-125"
                   }`}
-                  onMouseDown={(e) => handleLeftClick(item.id, e)}
-                  onTouchStart={(e) => handleLeftClick(item.id, e)}
+                  onPointerDown={(e) => handlePointerDown(item.id, e)}
                 />
               </div>
             );

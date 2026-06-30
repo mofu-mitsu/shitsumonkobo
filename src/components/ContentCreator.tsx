@@ -723,6 +723,74 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                     </div>
                   )}
                 </div>
+                
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">🎵 BGM設定 (最初はオフで始まります)</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setContent({ ...content, bgmMode: 'none' })}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                          (!content.bgmMode || content.bgmMode === 'none')
+                            ? "bg-slate-100 text-slate-800 border-sky-400" 
+                            : "bg-white text-slate-550 border-slate-200"
+                        }`}
+                      >
+                        🔇 なし
+                      </button>
+                      <button
+                        onClick={() => setContent({ ...content, bgmMode: 'preset', bgmPreset: content.bgmPreset || 'relax' })}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                          content.bgmMode === 'preset'
+                            ? "bg-slate-100 text-slate-800 border-sky-400" 
+                            : "bg-white text-slate-550 border-slate-200"
+                        }`}
+                      >
+                        🎶 テンプレBGM
+                      </button>
+                      <button
+                        onClick={() => setContent({ ...content, bgmMode: 'custom' })}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                          content.bgmMode === 'custom'
+                            ? "bg-slate-100 text-slate-800 border-sky-400" 
+                            : "bg-white text-slate-550 border-slate-200"
+                        }`}
+                      >
+                        🔗 好きなBGM(URL)
+                      </button>
+                    </div>
+                  </div>
+
+                  {content.bgmMode === 'preset' && (
+                    <div className="flex gap-2">
+                      {['relax', 'pop', 'cyber', '8bit'].map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setContent({ ...content, bgmPreset: p as any })}
+                          className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+                            content.bgmPreset === p
+                              ? "bg-sky-50 text-sky-800 border-sky-300"
+                              : "bg-white text-slate-500 border-slate-200"
+                          }`}
+                        >
+                          {p === 'relax' ? '🍃 リラックス' : p === 'pop' ? '🎈 ポップ' : p === 'cyber' ? '⚡ サイバー' : '👾 8bit'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {content.bgmMode === 'custom' && (
+                    <div>
+                      <input
+                        type="url"
+                        placeholder="https://... (mp3/wavの直接URL)"
+                        value={content.bgmUrl || ''}
+                        onChange={(e) => setContent({ ...content, bgmUrl: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="space-y-0.5">
