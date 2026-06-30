@@ -10,6 +10,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X, Menu, HelpCircle, BarChart, Ticket, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SponsorAd from "./components/SponsorAd";
+import Modal from "./components/Modal";
 import { initialSamples } from "./data/initialSamples";
 
 // 季節ごとのオートカラーを算出
@@ -77,6 +78,36 @@ export default function App() {
 
   // ヘルプモーダルの開閉状態
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // 汎用モーダルの開閉状態
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'alert' | 'confirm' | 'success_share' | 'error';
+    title: string;
+    message: string;
+    icon?: React.ReactNode;
+    onConfirm?: () => void;
+    shareUrl?: string;
+  }>({
+    isOpen: false,
+    type: 'alert',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (title: string, message: string, type: 'alert'|'error' = 'alert', icon?: React.ReactNode) => {
+    setModalConfig({ isOpen: true, type, title, message, icon });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, icon?: React.ReactNode) => {
+    setModalConfig({ isOpen: true, type: 'confirm', title, message, icon, onConfirm });
+  };
+
+  const showSuccessShare = (title: string, message: string, shareUrl: string, icon?: React.ReactNode) => {
+    setModalConfig({ isOpen: true, type: 'success_share', title, message, shareUrl, icon });
+  };
+
+  const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
 
   // 公開・共有リンク検知用 (例: /?id=ShitsumonKobo_xxxxx)
   useEffect(() => {
@@ -192,32 +223,53 @@ export default function App() {
       
       setAppMode('idle');
       setTargetContent(null);
-      alert(`診断を保存・共有可能にしました！✨\n自分のスタジオ、またはギャラリーから選択して遊んでね。`);
+      showSuccessShare(
+        "保存しました！✨",
+        "このしつもんは共有可能になりました。ギャラリーやスタジオから遊べます！",
+        `${window.location.origin}/?id=${updated.id}`,
+        <Sparkles className="text-pink-500" />
+      );
     } catch (error) {
       console.error("保存失敗:", error);
-      alert("保存に失敗しました。もう一度お試しください。");
+      showAlert("保存エラー", "保存に失敗しました。通信環境を確認してもう一度お試しください。", "error");
     }
   };
 
   // 削除処理
-  const handleDeleteContent = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteContent = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("本当にこの診断を削除しますか？\n（マイスタジオおよび公開ギャラリーから完全に削除されます）")) return;
+    
+    showConfirm(
+      "本当に削除しますか？",
+      "マイスタジオおよび公開ギャラリーから完全に削除されます。この操作は取り消せません。",
+      async () => {
+        try {
+          // 1. サーバーから削除
+          await deleteContent(id);
 
-    try {
-      // 1. サーバーから削除
-      await deleteContent(id);
-
-      // 2. ローカルから削除
-      const nextMy = myContents.filter(c => c.id !== id);
-      setMyContents(nextMy);
-      localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
-      
-      fetchPublicList();
-      playSound("bloop");
-    } catch (err) {
-      console.error("削除サーバー送信エラー:", err);
-    }
+          // 2. ローカルから削除
+          const nextMy = myContents.filter(c => c.id !== id);
+          setMyContents(nextMy);
+          localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+          
+          // 3. ギャラリーからも即座に消す
+          setPublicContents(prev => prev.filter(c => c.id !== id));
+          
+          fetchPublicList();
+          playSound("bloop");
+        } catch (err) {
+          console.error("削除サーバー送信エラー:", err);
+          showAlert("削除エラー", "サーバーからの削除に失敗しましたが、ローカルからは削除されます。", "error");
+          
+          // サーバー削除が権限エラー等で失敗しても、とりあえずローカルUIからは消す (自分が作ったものではないサンプルの削除など)
+          const nextMy = myContents.filter(c => c.id !== id);
+          setMyContents(nextMy);
+          localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+          setPublicContents(prev => prev.filter(c => c.id !== id));
+        }
+      },
+      <Trash2 className="text-rose-500" />
+    );
   };
 
   // 共有用URLをクリップボードにコピー
@@ -234,7 +286,7 @@ export default function App() {
       setTimeout(() => setToastMessage(""), 3000);
     }).catch(err => {
       console.error("コピー失敗:", err);
-      alert(`共有リンクはこちらです:\n${shareUrl}`);
+      showSuccessShare("リンクをコピー", "自動コピーに失敗しました。以下のリンクをご利用ください。", shareUrl);
     });
   };
 
@@ -248,7 +300,7 @@ export default function App() {
       try {
         const payload = JSON.parse(e.target?.result as string);
         if (!payload.title || (!payload.questions && !payload.gachaItems)) {
-          alert("これは『しつもん工房』の有効なデータファイル(.kobo.json)ではありません。");
+          showAlert("エラー", "これは『しつもん工房』の有効なデータファイル(.kobo.json)ではありません。", "error");
           return;
         }
 
@@ -270,10 +322,10 @@ export default function App() {
         fetchPublicList();
 
         playSound("bell");
-        alert(`ファイルから「${importedItem.title}」を正常にインポートしました！マイスタジオに格納されています。`);
+        showAlert("インポート完了", `ファイルから「${importedItem.title}」を正常にインポートしました！マイスタジオに格納されています。`, "alert", <Download className="text-teal-500" />);
       } catch (err) {
         console.error(err);
-        alert("JSONファイルのパースに失敗しました。ファイルが破損している可能性があります。");
+        showAlert("エラー", "JSONファイルのパースに失敗しました。ファイルが破損している可能性があります。", "error");
       }
     };
     reader.readAsText(file);
@@ -368,9 +420,6 @@ export default function App() {
     <div className={`bg-slate-50 bg-gradient-to-br text-slate-800 min-h-screen font-sans flex flex-col relative overflow-x-hidden ${season.bgColor}`}>
       <WeatherEffect type={(season as any).effect} />
       
-      {/* 季節のオートグラデーション背景 (サマー・クリアソーダ) */}
-      
- 
       {/* ヘッダー */}
       <header className="border-b border-sky-100/80 bg-white/80 backdrop-blur-md sticky top-0 z-40 select-none shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-3">
@@ -407,9 +456,10 @@ export default function App() {
                         await loginWithGoogle();
                       } catch (err: any) {
                         if (err?.code === 'auth/operation-not-allowed') {
-                          alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                          showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
                         } else {
                           console.log("Login popup closed or failed:", err);
+                          showAlert('ログインエラー', `ログイン処理中にエラーが発生しました。\n${err?.message || ''}`, 'error');
                         }
                       }
                     }}
@@ -458,12 +508,34 @@ export default function App() {
             </div>
   
             {/* スマホ用アイコンボタン（ハンバーガー等） */}
-            <div className="sm:hidden flex items-center gap-2">
+            <div className="sm:hidden flex items-center gap-1.5">
+              {appMode === 'idle' && (
+                <>
+                  <button 
+                    onClick={() => { setActiveView('gallery'); playSound("synth"); }}
+                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                      activeView === 'gallery' ? 'bg-sky-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500'
+                    }`}
+                    title="ギャラリー"
+                  >
+                    <Compass size={18} />
+                  </button>
+                  <button 
+                    onClick={() => { setActiveView('studio'); playSound("synth"); }}
+                    className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                      activeView === 'studio' ? 'bg-sky-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500'
+                    }`}
+                    title="マイスタジオ"
+                  >
+                    <Pocket size={18} />
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setIsHelpOpen(true)}
                 className="p-2 text-slate-400 hover:text-sky-500 rounded-xl transition-colors cursor-pointer"
               >
-                <HelpCircle size={24} />
+                <HelpCircle size={22} />
               </button>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -473,28 +545,6 @@ export default function App() {
               </button>
             </div>
           </div>
-          
-          {/* スマホ用常時表示ビュー・タブ切り替え */}
-          {appMode === 'idle' && (
-            <div className="sm:hidden mt-3 flex bg-slate-100 border border-slate-200 p-1 rounded-3xl text-xs font-bold gap-1 shadow-inner">
-              <button 
-                onClick={() => { setActiveView('gallery'); playSound("synth"); }}
-                className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
-                  activeView === 'gallery' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Compass size={14} /> ギャラリー
-              </button>
-              <button 
-                onClick={() => { setActiveView('studio'); playSound("synth"); }}
-                className={`flex-1 py-2 rounded-2xl transition-all cursor-pointer flex justify-center items-center gap-1.5 ${
-                  activeView === 'studio' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Pocket size={14} /> スタジオ
-              </button>
-            </div>
-          )}
         </div>
  
         {/* スマホ用展開メニュー */}
@@ -549,9 +599,10 @@ export default function App() {
                       setIsMobileMenuOpen(false);
                     } catch (err: any) {
                       if (err?.code === 'auth/operation-not-allowed') {
-                        alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                        showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
                       } else {
                         console.log("Login popup closed or failed:", err);
+                        showAlert('ログインエラー', `ログイン処理中にエラーが発生しました。\n${err?.message || ''}`, 'error');
                       }
                     }
                   }}
@@ -717,6 +768,15 @@ export default function App() {
                           <div className="flex justify-between items-center pt-3 border-t border-slate-100 text-[10px] text-slate-400 mt-3 select-none">
                             <span>作者: <strong>{item.creatorName || "名無しさん"}</strong></span>
                             <div className="flex items-center gap-3">
+                              {(item.creatorId === currentUser?.uid || !item.creatorId) && (
+                                <button
+                                  onClick={(e) => handleDeleteContent(item.id, e)}
+                                  className="text-slate-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
+                                  title="ギャラリーから削除"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -911,6 +971,7 @@ export default function App() {
             season={season} 
             currentUser={currentUser} 
             initialShowDashboard={initDashboard}
+            showAlert={showAlert}
             onClose={() => {
               playSound("bloop");
               setAppMode('idle');
@@ -936,6 +997,7 @@ export default function App() {
               setTargetContent(null);
             }}
             onSave={handleSaveContent}
+            showAlert={showAlert}
           />
         )}
 
@@ -1023,6 +1085,71 @@ export default function App() {
         </div>
         <SponsorAd />
       </footer>
+
+      {/* 汎用モーダル */}
+      <Modal
+        isOpen={modalConfig.isOpen}
+        onClose={closeModal}
+        title={modalConfig.title}
+        icon={modalConfig.icon}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 whitespace-pre-wrap">{modalConfig.message}</p>
+          
+          {modalConfig.type === 'success_share' && modalConfig.shareUrl && (
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+              <p className="text-xs font-bold text-slate-500 mb-1">共有用URL:</p>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={modalConfig.shareUrl} 
+                  readOnly 
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 outline-none"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(modalConfig.shareUrl || "");
+                    setToastMessage("URLをコピーしました！");
+                    setTimeout(() => setToastMessage(""), 3000);
+                  }}
+                  className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  コピー
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            {modalConfig.type === 'confirm' ? (
+              <>
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => {
+                    modalConfig.onConfirm?.();
+                    closeModal();
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-sm transition-colors cursor-pointer"
+                >
+                  削除する
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-white hover:bg-slate-700 shadow-sm transition-colors cursor-pointer w-full"
+              >
+                OK
+              </button>
+            )}
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

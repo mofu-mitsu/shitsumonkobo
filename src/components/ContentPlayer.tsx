@@ -15,6 +15,7 @@ interface ContentPlayerProps {
   content: ShitsumonKobo_Content;
   onClose: () => void;
   initialShowDashboard?: boolean;
+  showAlert?: (title: string, message: string, type?: 'alert'|'error', icon?: React.ReactNode) => void;
 }
 
 const ExpandableRecentAnswers = ({ items, renderItem, listClassName = "" }: { items: any[], renderItem: (item: any, idx: number) => React.ReactNode, listClassName?: string }) => {
@@ -40,7 +41,7 @@ const ExpandableRecentAnswers = ({ items, renderItem, listClassName = "" }: { it
   );
 };
 
-export default function ContentPlayer({ content, season, currentUser, onClose, initialShowDashboard = false }: ContentPlayerProps) {
+export default function ContentPlayer({ content, season, currentUser, onClose, initialShowDashboard = false, showAlert }: ContentPlayerProps) {
   // プレイ基本設定
   const [useRandomOrder, setUseRandomOrder] = useState(false);
   const [maxQuestionLimit, setMaxQuestionLimit] = useState<number>(content.questions.length);
@@ -411,7 +412,11 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     if (content.gimmicks?.enableTapBeat) {
       const cost = count * 10;
       if (beatTapsScore < cost) {
-        alert(`ポイントが足りないよ！必要なポイント: ${cost} pt\n（現在: ${beatTapsScore} pt）`);
+        if (showAlert) {
+          showAlert("ポイント不足", `ポイントが足りないよ！必要なポイント: ${cost} pt\n（現在: ${beatTapsScore} pt）`, "error");
+        } else {
+          alert(`ポイントが足りないよ！必要なポイント: ${cost} pt\n（現在: ${beatTapsScore} pt）`);
+        }
         return;
       }
       setBeatTapsScore(prev => prev - cost);
@@ -556,7 +561,14 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       });
       return sorted[0];
     } else {
-      // フォールバックを探す
+      // マッチするものがない場合、まず「random」を探す
+      const randomResults = content.results.filter(r => r.conditionType === 'random');
+      if (randomResults.length > 0) {
+        const randomIndex = Math.floor(Math.random() * randomResults.length);
+        return randomResults[randomIndex];
+      }
+
+      // 次にフォールバックを探す
       const fallbackResult = content.results.find(r => r.isFallback);
       if (fallbackResult) {
         return fallbackResult;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { 
   ShitsumonKobo_Content, 
   ShitsumonKobo_Question, 
@@ -45,9 +45,10 @@ interface ContentCreatorProps {
   onSave: (content: ShitsumonKobo_Content) => void;
   onCancel: () => void;
   initialContent?: ShitsumonKobo_Content | null;
+  showAlert?: (title: string, message: string, type?: 'alert'|'error', icon?: React.ReactNode) => void;
 }
 
-export default function ContentCreator({ season, onSave, onCancel, initialContent, currentUser }: ContentCreatorProps) {
+export default function ContentCreator({ season, onSave, onCancel, initialContent, currentUser, showAlert }: ContentCreatorProps) {
   // テーマ色の決定
   const [content, setContent] = useState<ShitsumonKobo_Content>(() => {
     if (initialContent) return { ...initialContent };
@@ -95,7 +96,11 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
   // AI自動生成 APIの呼び出し
   const handleAIGenerate = async () => {
     if (!content.title.trim()) {
-      alert("AIに作成してもらうには、まず「タイトル（お題）」を何でも入力してください！\n例: 『私のねこ度診断』『INTJなテストクイズ』");
+      if (showAlert) {
+        showAlert("タイトルが必要です", "AIに作成してもらうには、まず「タイトル（お題）」を何でも入力してください！\n例: 『私のねこ度診断』『INTJなテストクイズ』", "alert");
+      } else {
+        alert("AIに作成してもらうには、まず「タイトル（お題）」を何でも入力してください！\n例: 『私のねこ度診断』『INTJなテストクイズ』");
+      }
       return;
     }
     
@@ -136,7 +141,11 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
       
     } catch (error: any) {
       console.error(error);
-      alert(`ジェミAI生成エラー: ${error.message || "作成に失敗しました。"}\n※ローカルでのノーコード手動作成は、このまま引き続き行えます！`);
+      if (showAlert) {
+        showAlert("生成エラー", `ジェミAI生成エラー: ${error.message || "作成に失敗しました。"}\n※ローカルでのノーコード手動作成は、このまま引き続き行えます！`, "error");
+      } else {
+        alert(`ジェミAI生成エラー: ${error.message || "作成に失敗しました。"}\n※ローカルでのノーコード手動作成は、このまま引き続き行えます！`);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -183,7 +192,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
       id: "q_" + Math.random().toString(36).substring(2, 9),
       text: qType === 'five_choices' ? "（ここに質問テキストを入力してね）" : `新質問 (${qType === 'pairing' ? '線つなぎペア' : '通常質問'})`,
       type: qType,
-      skipEnabled: qType === 'five_choices' || qType === 'radio' || qType === 'text',
+      skipEnabled: qType === 'five_choices' || qType === 'radio' || qType === 'text' || qType === 'dropdown',
       sliderMin: 0,
       sliderMax: 10,
       sliderStep: 1,
@@ -371,13 +380,21 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
   // 保存処理
   const handleSave = async () => {
     if (!content.title.trim()) {
-      alert("しつもんのタイトルを入力してください！");
+      if (showAlert) {
+        showAlert("入力エラー", "しつもんのタイトルを入力してください！", "error");
+      } else {
+        alert("しつもんのタイトルを入力してください！");
+      }
       return;
     }
 
     if (content.type !== 'gacha') {
       if (content.questions.length === 0) {
-        alert("質問を1つ以上追加してください！");
+        if (showAlert) {
+          showAlert("入力エラー", "質問を1つ以上追加してください！", "error");
+        } else {
+          alert("質問を1つ以上追加してください！");
+        }
         return;
       }
     }
@@ -549,7 +566,11 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                   await loginWithGoogle();
                 } catch (e: any) {
                   if (e?.code === 'auth/operation-not-allowed') {
-                    alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                    if (showAlert) {
+                      showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
+                    } else {
+                      alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                    }
                   } else {
                     console.log("Login popup closed or failed:", e);
                   }
@@ -953,7 +974,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
 
 
                     {/* わからないボタン(スキップ)の設定 */}
-                    {['radio', 'five_choices', 'text'].includes(q.type) && (
+                    {['radio', 'five_choices', 'text', 'dropdown'].includes(q.type) && (
                       <div className="flex items-center gap-2 pl-2">
                         <input
                           type="checkbox"
@@ -995,8 +1016,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       </div>
                     )}
 
-                    {/* ================= type === five_choices, radio, checkbox ================= */}
-                    {['five_choices', 'radio', 'checkbox'].includes(q.type) && (
+                    {/* ================= type === five_choices, radio, checkbox, dropdown ================= */}
+                    {['five_choices', 'radio', 'checkbox', 'dropdown'].includes(q.type) && (
                       <div className="space-y-3 pl-3 border-l-2 border-slate-200">
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-bold text-slate-500">選択肢と加点調整：</span>
@@ -1729,6 +1750,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   <option value="threshold">最低点数 (単一パラメータ)</option>
                                   <option value="attribute_order">属性のスコア順 (例: A &gt; B &gt; C)</option>
                                   <option value="expression">高度な条件式 (例: A + B &gt;= 5)</option>
+                                  <option value="random">🎲 ランダムに出現 (確率均等)</option>
                                 </select>
                               </div>
 
@@ -1744,6 +1766,12 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 />
                                 <span className="text-[10px] text-slate-500 font-bold">どの条件にも当てはまらない時に出す結果（フォールバック）にする</span>
                               </div>
+
+                              {result.conditionType === 'random' && (
+                                <p className="text-[10px] text-slate-500 mt-1">
+                                  ※ ランダム設定された結果の中から、どれか1つがランダムに選ばれます。他の条件を満たすものが1つもなかった場合のみ判定されます。
+                                </p>
+                              )}
 
                               {result.conditionType === 'attribute_order' && !result.isFallback && (
                                 <div className="mt-2">
@@ -1780,10 +1808,12 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                     >
                                       {content.type === 'quiz' ? (
                                         <option value="correct">正解数 (correct)</option>
-                                      ) : (
+                                      ) : content.scoringAttributes.length > 0 ? (
                                         content.scoringAttributes.map(attr => (
                                           <option key={attr} value={attr}>{attr}</option>
                                         ))
+                                      ) : (
+                                        <option value="">パラメータ未設定</option>
                                       )}
                                     </select>
                                   </div>

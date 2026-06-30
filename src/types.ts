@@ -77,7 +77,7 @@ export interface ShitsumonKobo_Question {
   incorrectFeedback?: string; // クイズで不正解時のコメント
 }
 
-export type ShitsumonKobo_ResultConditionType = 'threshold' | 'expression' | 'attribute_order' | 'attribute_sum' | 'max_expression';
+export type ShitsumonKobo_ResultConditionType = 'threshold' | 'expression' | 'attribute_order' | 'attribute_sum' | 'max_expression' | 'random';
 
 export interface ShitsumonKobo_ResultOption {
   id: string;
