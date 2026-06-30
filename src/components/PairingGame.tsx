@@ -299,13 +299,14 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
             return (
               <div 
                 key={`left-${item.id}`}
-                className={`flex items-center justify-between p-3 rounded-xl shadow-md transition-all border ${
+                className={`flex items-center justify-between p-3 rounded-xl shadow-md transition-all border cursor-pointer select-none ${
                   isSelected 
                     ? "border-cyan-500 bg-cyan-50/90 ring-2 ring-cyan-400/50 scale-102" 
                     : isConnected 
                     ? "border-emerald-300 bg-emerald-50/60" 
                     : "border-sky-100 bg-white/90 hover:border-sky-300"
                 }`}
+                onPointerDown={(e) => handlePointerDown(item.id, e)}
               >
                 <div className="flex items-center gap-2">
                   <div className="w-12 h-12 flex items-center justify-center bg-sky-50 rounded-lg overflow-hidden border border-sky-100/50">
@@ -324,15 +325,16 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
                 
                 <div 
                   id={`dot-left-${item.id}`}
-                  className={`w-5 h-5 rounded-full border-2 transition-all cursor-crosshair ml-2 ${
+                  className={`w-6 h-6 rounded-full border-2 transition-all ml-2 flex-shrink-0 flex items-center justify-center ${
                     isSelected 
                       ? "bg-cyan-500 border-white scale-125" 
                       : isConnected 
                       ? "bg-emerald-500 border-white" 
-                      : "bg-sky-250 bg-sky-300 border-white hover:scale-125"
+                      : "bg-sky-300 border-white hover:scale-125"
                   }`}
-                  onPointerDown={(e) => handlePointerDown(item.id, e)}
-                />
+                >
+                  <div className="w-2 h-2 rounded-full bg-white/50 pointer-events-none" />
+                </div>
               </div>
             );
           })}
