@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ShitsumonKobo_Content, ShitsumonKobo_Question, ShitsumonKobo_GachaItem, ShitsumonKobo_ResultOption } from "../types";
 import { playSound } from "./SoundEngine";
 import PairingGame from "./PairingGame";
@@ -119,6 +119,32 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
   const currentQ = playQuestions[currentIdx];
 
+  const isQuestionVisible = (q: ShitsumonKobo_Question): boolean => {
+    if (!q.conditionParentId) return true;
+    
+    const parentQ = playQuestions.find(pq => pq.id === q.conditionParentId);
+    if (!parentQ) return true;
+
+    let ansVal = textAnswers[parentQ.id] || "";
+    if (['radio', 'five_choices', 'dropdown'].includes(parentQ.type)) {
+      const choice = parentQ.choices?.find(c => c.id === ansVal);
+      if (choice) ansVal = choice.text;
+    }
+
+    const op = q.conditionOperator || 'equals';
+    const val = q.conditionValue || '';
+    
+    if (op === 'equals') {
+      return ansVal === val;
+    } else {
+      return ansVal !== val;
+    }
+  };
+
+  const visibleQuestions = playQuestions.filter(isQuestionVisible);
+  const visibleIndex = visibleQuestions.findIndex(q => q.id === currentQ?.id);
+  const progressRatio = visibleQuestions.length > 0 ? (visibleIndex / visibleQuestions.length) : 0;
+
   // 単一回答（ラジオ）選択時
   
   const triggerReaction = () => {
@@ -186,7 +212,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       fbExplanation = fbExplanation || "";
 
       setFeedbackModal({ show: true, type: 'quiz', isCorrect: fbIsCorrect, explanation: fbExplanation });
-      playSound("synth");
+      playSound(fbIsCorrect ? "correct" : "incorrect");
       return;
     }
     
@@ -265,6 +291,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     }
 
     playQuestions.forEach(q => {
+      if (!isQuestionVisible(q)) return;
+
       if (q.type === 'five_choices' || q.type === 'radio' || q.type === 'dropdown') {
         const choiceId = textAnswers[q.id];
         const selectedChoice = q.choices.find(c => c.id === choiceId);
@@ -365,8 +393,12 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
   // 前の問題へ戻る
   const goToPrev = () => {
-    if (currentIdx > 0) {
-      setCurrentIdx(currentIdx - 1);
+    let prevIdx = currentIdx - 1;
+    while(prevIdx >= 0 && !isQuestionVisible(playQuestions[prevIdx])) {
+      prevIdx--;
+    }
+    if (prevIdx >= 0) {
+      setCurrentIdx(prevIdx);
       playSound("bloop");
     }
   };
@@ -383,8 +415,13 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       setTimeout(() => setShowEncounter(false), 3000);
     }
 
-    if (currentIdx + 1 < playQuestions.length) {
-      setCurrentIdx(currentIdx + 1);
+    let nextIdx = currentIdx + 1;
+    while(nextIdx < playQuestions.length && !isQuestionVisible(playQuestions[nextIdx])) {
+      nextIdx++;
+    }
+
+    if (nextIdx < playQuestions.length) {
+      setCurrentIdx(nextIdx);
     } else {
       // 終了時にオンデマンド一括集算して state に正確なスコアを一撃で格納
       const finishedScores = doAggregateScores();
@@ -636,12 +673,22 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     if (isFinished) {
       const saveAndLoad = async () => {
         try {
+          const visibleAnswers: Record<string, any> = {};
+          playQuestions.forEach(q => {
+            if (isQuestionVisible(q)) {
+              if (textAnswers[q.id] !== undefined) visibleAnswers[q.id] = textAnswers[q.id];
+              if (checkboxAnswers[q.id] !== undefined) visibleAnswers[q.id] = checkboxAnswers[q.id];
+              if (sliderAnswers[q.id] !== undefined) visibleAnswers[q.id] = sliderAnswers[q.id];
+              if (pairingScores[q.id] !== undefined) visibleAnswers[q.id] = pairingScores[q.id];
+            }
+          });
+
           await savePlayLog(content.id, content.creatorXHandle, {
             type: content.type,
             scores: scores,
             resultId: finalResult?.id,
             resultTitle: finalResult?.title,
-            answers: { ...textAnswers, ...checkboxAnswers, ...sliderAnswers, ...pairingScores }
+            answers: visibleAnswers
           });
           
           if (content.type === 'survey' && (content.surveyShowStats !== false)) {
@@ -719,7 +766,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       shareText = `【しつもん工房 アンケート】\nお題：${content.title}\n回答しました！\n\nみんなも「しつもん工房」で回答してね！`;
     } else if (content.type === 'quiz') {
       if (!finalResult) return;
-      const totalQ = playQuestions.length;
+      const totalQ = playQuestions.filter(isQuestionVisible).length;
       const correctQ = scores['correct'] || 0;
       const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
       shareText = `【しつもん工房 クイズ】\nお題：${content.title}\n私の正答率は【${accuracy}%】でした！ (${correctQ}/${totalQ}問正解)\n結果ランク：${finalResult.title}\n\nみんなも「しつもん工房」で挑戦してみよう！`;
@@ -1049,13 +1096,13 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
             {/* 進捗プログレス */}
             <div className="space-y-1">
               <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                <span>PROGRESS: {currentIdx + 1} / {playQuestions.length}</span>
-                <span>{Math.round(((currentIdx) / playQuestions.length) * 100)}% 完了</span>
+                <span>PROGRESS: {visibleIndex + 1} / {visibleQuestions.length}</span>
+                <span>{Math.round(progressRatio * 100)}% 完了</span>
               </div>
               <div className="w-full h-1.5 bg-sky-100 rounded-full overflow-hidden">
                 <div 
                   className="bg-sky-500 h-full transition-all duration-300"
-                  style={{ width: (((currentIdx) / playQuestions.length) * 100) + '%' }}
+                  style={{ width: (progressRatio * 100) + '%' }}
                 />
               </div>
             </div>
@@ -1705,7 +1752,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         <span>みんなの遊び場「しつもん工房」 © 制作室</span>
         {isStarted && !isFinished && content.type !== 'gacha' && (
           <span className="font-mono text-[10px] text-slate-400">
-            問題: {currentIdx + 1}/{playQuestions.length}
+            問題: {visibleIndex + 1}/{visibleQuestions.length}
           </span>
         )}
       </div>

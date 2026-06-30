@@ -1061,6 +1061,46 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       </div>
                     )}
 
+                    {/* 分岐条件（前の質問の回答に応じて表示） */}
+                    <div className="mt-2 space-y-2 p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
+                      <label className="block text-xs font-bold text-amber-700 mb-1">
+                        🌿 分岐条件 (特定の条件を満たした時だけこの質問を表示)
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          value={q.conditionParentId || ""}
+                          onChange={(e) => updateQuestion(q.id, { conditionParentId: e.target.value })}
+                          className="flex-1 bg-white border border-amber-200 text-xs px-2 py-1.5 rounded-lg text-slate-700"
+                        >
+                          <option value="">常に表示する (条件なし)</option>
+                          {content.questions.slice(0, idx).map(prevQ => (
+                            <option key={prevQ.id} value={prevQ.id}>Q{content.questions.findIndex(a=>a.id===prevQ.id)+1}: {prevQ.text}</option>
+                          ))}
+                        </select>
+                        
+                        {q.conditionParentId && (
+                          <>
+                            <select
+                              value={q.conditionOperator || "equals"}
+                              onChange={(e) => updateQuestion(q.id, { conditionOperator: e.target.value as any })}
+                              className="w-full sm:w-28 bg-white border border-amber-200 text-xs px-2 py-1.5 rounded-lg text-slate-700"
+                            >
+                              <option value="equals">と一致する</option>
+                              <option value="not_equals">と一致しない</option>
+                            </select>
+                            
+                            <input
+                              type="text"
+                              value={q.conditionValue || ""}
+                              onChange={(e) => updateQuestion(q.id, { conditionValue: e.target.value })}
+                              placeholder="選択肢のテキストなど"
+                              className="flex-1 bg-white border border-amber-200 text-xs px-2 py-1.5 rounded-lg text-slate-700 placeholder-slate-400"
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
                     {content.type === 'quiz' && (
                       <div className="mt-2 space-y-2 p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
                         <div>

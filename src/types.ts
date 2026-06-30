@@ -79,6 +79,11 @@ export interface ShitsumonKobo_Question {
   imageUrlOrEmoji?: string; // 質問と一緒に表示する画像や絵文字
   correctFeedback?: string; // クイズで正解時のコメント
   incorrectFeedback?: string; // クイズで不正解時のコメント
+
+  // 分岐条件（特定の質問に対する回答に基づいて表示するかどうか）
+  conditionParentId?: string;
+  conditionOperator?: 'equals' | 'not_equals';
+  conditionValue?: string;
 }
 
 export type ShitsumonKobo_ResultConditionType = 'threshold' | 'expression' | 'attribute_order' | 'attribute_sum' | 'max_expression' | 'random';

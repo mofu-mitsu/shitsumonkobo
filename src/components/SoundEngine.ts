@@ -12,7 +12,7 @@
 // 通常の AudioContext インスタンスの累積上限に達しないよう、シングルトンで使い回します。
 let sharedCtx: AudioContext | null = null;
 
-export function playSound(type: 'bell' | 'synth' | 'bloop' | 'kick') {
+export function playSound(type: 'bell' | 'synth' | 'bloop' | 'kick' | 'correct' | 'incorrect') {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
@@ -78,6 +78,30 @@ export function playSound(type: 'bell' | 'synth' | 'bloop' | 'kick') {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now);
         osc.stop(now + 0.32);
+        break;
+
+      case 'correct':
+        // 正解音: ピンポン
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(659.25, now); // E5
+        osc.frequency.setValueAtTime(880.00, now + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.setValueAtTime(0.001, now + 0.14);
+        gain.gain.setValueAtTime(0.3, now + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc.start(now);
+        osc.stop(now + 0.82);
+        break;
+
+      case 'incorrect':
+        // 不正解音: ブブー
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(120, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.52);
         break;
     }
   } catch (error) {
