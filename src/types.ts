@@ -73,6 +73,8 @@ export interface ShitsumonKobo_Question {
   sliderLeftMaxScore?: number; // 左に振り切った時の最大加点
   sliderRightAttribute?: string; // 右に振り切った時の加点先
   sliderRightMaxScore?: number; // 右に振り切った時の最大加点
+  sliderCorrectMin?: number; // クイズ時の正解範囲の最小値
+  sliderCorrectMax?: number; // クイズ時の正解範囲の最大値
   textRules: ShitsumonKobo_TextRule[];
   pairItems: ShitsumonKobo_PairItem[];
   pairingAttributeScores?: Record<string, number>;
