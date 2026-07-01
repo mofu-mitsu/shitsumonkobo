@@ -1,5 +1,5 @@
 import { auth, db } from './firebase';
-import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 export const savePlayLog = async (contentId: string, creatorXHandle: string | undefined, data: any) => {
   try {
@@ -27,4 +27,14 @@ export const getPlayStats = async (contentId: string) => {
     console.error("Failed to get play stats", error);
     return [];
   }
+};
+
+export const onSnapshotPlayStats = (contentId: string, callback: (logs: any[]) => void) => {
+  const q = query(collection(db, "playLogs"), where("contentId", "==", contentId));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => doc.data()));
+  }, (error) => {
+    console.error("Failed to listen to play stats", error);
+    callback([]);
+  });
 };
