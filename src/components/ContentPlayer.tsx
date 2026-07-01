@@ -185,7 +185,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     let showFb = false;
     let fbIsCorrect = false;
 
-    if (content.type === 'quiz' && content.quizImmediateFeedback) {
+    if (content.type === 'quiz' && content.quizImmediateFeedback !== false) {
       if (currentQ.type === 'radio' || currentQ.type === 'five_choices' || currentQ.type === 'dropdown') {
         const cId = textAnswers[currentQ.id];
         const c = currentQ.choices.find(c => c.id === cId);
@@ -1610,13 +1610,16 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               </h3>
             </div>
 
-            {finalResult?.imageUrl && !finalResult.imageUrl.startsWith("✨") && (
-              <div className="max-w-xs mx-auto">
-                <img src={finalResult.imageUrl} alt={finalResult.title} className="w-full h-auto object-cover rounded-xl shadow-sm border border-slate-100" />
+            {finalResult?.imageUrl && (
+              <div className="w-full mb-4">
+                {finalResult.imageUrl.startsWith('http') || finalResult.imageUrl.startsWith('data:') ? (
+                  <div className="max-w-xs mx-auto">
+                    <img src={finalResult.imageUrl} alt={finalResult.title} className="w-full h-auto object-cover rounded-xl shadow-sm border border-slate-100" />
+                  </div>
+                ) : (
+                  <div className="text-6xl my-4 text-center">{finalResult.imageUrl.replace("✨", "").trim()}</div>
+                )}
               </div>
-            )}
-            {finalResult?.imageUrl && finalResult.imageUrl.startsWith("✨") && (
-              <div className="text-6xl my-4 text-center">{finalResult.imageUrl.replace("✨", "").trim()}</div>
             )}
 
             <div className="text-sm text-slate-600 whitespace-pre-wrap">
@@ -1737,14 +1740,20 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
               {/* 結果メインイメージ */}
               {finalResult.imageUrl && (
-                <div className="h-[220px] md:h-[260px] w-full rounded-2xl overflow-hidden border border-sky-100 relative shadow-inner">
-                  <img 
-                    src={finalResult.imageUrl} 
-                    alt={finalResult.title} 
-                    className="w-full h-full object-cover select-none" 
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white/80 to-transparent" />
+                <div className="w-full mb-6">
+                  {finalResult.imageUrl.startsWith('http') || finalResult.imageUrl.startsWith('data:') ? (
+                    <div className="h-[220px] md:h-[260px] w-full rounded-2xl overflow-hidden border border-sky-100 relative shadow-inner">
+                      <img 
+                        src={finalResult.imageUrl} 
+                        alt={finalResult.title} 
+                        className="w-full h-full object-cover select-none" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white/80 to-transparent" />
+                    </div>
+                  ) : (
+                    <div className="text-8xl drop-shadow-md py-4 text-center">{finalResult.imageUrl}</div>
+                  )}
                 </div>
               )}
 
