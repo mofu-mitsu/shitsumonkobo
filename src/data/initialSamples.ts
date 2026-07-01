@@ -284,8 +284,16 @@ export const initialSamples: ShitsumonKobo_Content[] = [
         title: "全問正解！線引き動物アドバイザー 🏆",
         description: "すべてのペアを正確に見抜きました！あなたの直感と繊細なタッチ操作、そして動物たちへの愛は完璧です！",
         imageUrl: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?w=600&auto=format&fit=crop&q=60",
-        conditionAttribute: "QuizScore",
-        conditionScoreMin: 100
+        conditionAttribute: "correct",
+        conditionScoreMin: 1
+      },
+      {
+        id: "pr_fail",
+        title: "残念... 😢",
+        description: "動物たちも首を傾げています。もう一度チャレンジして、正しいペアを見つけてあげましょう！",
+        imageUrl: "🐛",
+        conditionAttribute: "correct",
+        conditionScoreMin: 0
       }
     ]
   }
