@@ -5,7 +5,7 @@ import ContentPlayer from "./components/ContentPlayer";
 import { playSound } from "./components/SoundEngine";
 import WeatherEffect from "./components/WeatherEffect";
 import { auth, loginWithGoogle, logout } from "./lib/firebase";
-import { getPublicContents, getMyContents, getContentById, saveContent, deleteContent } from "./lib/contents";
+import { getPublicContents, getMyContents, getContentById, saveContent, deleteContent, syncUserPlayHistory, getUserPlayHistory } from "./lib/contents";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X, Menu, HelpCircle, BarChart, Ticket, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -39,10 +39,33 @@ export default function App() {
   const [season, setSeason] = useState(getAutoSeasonColor());
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
         loadMyStudio(user.uid);
+        
+        // Play history sync
+        try {
+          const serverHistory = await getUserPlayHistory(user.uid);
+          const raw = localStorage.getItem("shitsumonkobo_history");
+          let localHistory: ShitsumonKobo_Content[] = [];
+          if (raw) localHistory = JSON.parse(raw);
+          
+          let merged = [...serverHistory];
+          localHistory.forEach(localItem => {
+            if (!merged.find(m => m.id === localItem.id)) {
+              merged.push(localItem);
+            }
+          });
+          if (merged.length > 30) merged = merged.slice(0, 30);
+          
+          setPlayHistory(merged);
+          localStorage.setItem("shitsumonkobo_history", JSON.stringify(merged));
+          if (localHistory.length > 0) {
+            await syncUserPlayHistory(user.uid, merged);
+          }
+        } catch(e) {}
+
       } else {
         // Fallback to local storage for guests
         loadMyStudioLocal();
@@ -160,12 +183,24 @@ export default function App() {
       }
       
       const merged = [...list];
-      localList.forEach(localItem => {
+      let needsLocalUpdate = false;
+
+      for (const localItem of localList) {
         if (!merged.find(m => m.id === localItem.id)) {
+          // If the local item was created anonymously, claim it for this user
+          if (!localItem.creatorId) {
+            localItem.creatorId = userId;
+            await saveContent(localItem);
+            needsLocalUpdate = true;
+          }
           merged.push(localItem);
         }
-      });
+      }
+
       setMyContents(merged);
+      if (needsLocalUpdate) {
+        localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(merged));
+      }
     } catch (e) {
       console.error("スタジオの読み込みに失敗しました:", e);
     }
@@ -356,8 +391,13 @@ export default function App() {
       setPlayHistory(prev => {
         let history = prev.filter(h => h.id !== item.id);
         history.unshift(item);
-        if (history.length > 20) history = history.slice(0, 20);
+        if (history.length > 30) history = history.slice(0, 30);
         localStorage.setItem("shitsumonkobo_history", JSON.stringify(history));
+        
+        if (currentUser) {
+          syncUserPlayHistory(currentUser.uid, history).catch(console.error);
+        }
+        
         return history;
       });
     } catch(e) {}
