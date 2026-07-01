@@ -48,6 +48,37 @@ interface ContentCreatorProps {
   showAlert?: (title: string, message: string, type?: 'alert'|'error', icon?: React.ReactNode) => void;
 }
 
+const compressImage = (file: File, maxWidth: number = 800, maxHeight: number = 800, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = error => reject(error);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export default function ContentCreator({ season, onSave, onCancel, initialContent, currentUser, showAlert }: ContentCreatorProps) {
   // テーマ色の決定
   const [content, setContent] = useState<ShitsumonKobo_Content>(() => {
@@ -262,14 +293,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
   };
 
   // 選択肢の更新
-  const updateChoice = (qId: string, choiceId: string, text: string, scores: Record<string, number>, isCorrect?: boolean, feedback?: string) => {
+  const updateChoice = (qId: string, choiceId: string, text: string, scores: Record<string, number>, isCorrect?: boolean, feedback?: string, nextQuestionId?: string) => {
     setContent(prev => ({
       ...prev,
       questions: prev.questions.map(q => {
         if (q.id === qId) {
           return {
             ...q,
-            choices: q.choices.map(c => c.id === choiceId ? { ...c, text, scores, isCorrect: isCorrect !== undefined ? isCorrect : c.isCorrect, feedback: feedback !== undefined ? feedback : c.feedback } : c)
+            choices: q.choices.map(c => c.id === choiceId ? { ...c, text, scores, isCorrect: isCorrect !== undefined ? isCorrect : c.isCorrect, feedback: feedback !== undefined ? feedback : c.feedback, nextQuestionId: nextQuestionId !== undefined ? nextQuestionId : c.nextQuestionId } : c)
           };
         }
         return q;
@@ -620,16 +651,16 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                         type="file" 
                         accept="image/*" 
                         className="hidden" 
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              if (event.target?.result) {
-                                setContent({ ...content, coverImageUrl: event.target.result as string });
-                              }
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              const compressedDataUrl = await compressImage(file, 800, 800, 0.7);
+                              setContent({ ...content, coverImageUrl: compressedDataUrl });
+                            } catch (error) {
+                              console.error("Image compression failed", error);
+                              if (showAlert) showAlert("エラー", "画像のアップロードに失敗しました。");
+                            }
                           }
                         }}
                       />
@@ -1184,9 +1215,24 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               </button>
                             </div>
 
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-slate-500 font-bold whitespace-nowrap">↪️ ジャンプ先:</span>
+                              <select
+                                value={choice.nextQuestionId || ""}
+                                onChange={(e) => updateChoice(q.id, choice.id, choice.text, choice.scores, choice.isCorrect, choice.feedback, e.target.value)}
+                                className="flex-1 bg-white border border-slate-200 text-xs px-2 py-1.5 rounded-lg text-slate-700 focus:outline-none focus:border-sky-300"
+                              >
+                                <option value="">次の問題へ進む (デフォルト)</option>
+                                <option value="FINISH">🏁 ここで終了する</option>
+                                {content.questions.filter(nextQ => nextQ.id !== q.id).map((nextQ, nIdx) => (
+                                  <option key={nextQ.id} value={nextQ.id}>Q{content.questions.findIndex(a=>a.id===nextQ.id)+1}: {nextQ.text.substring(0, 20)}...</option>
+                                ))}
+                              </select>
+                            </div>
+
                             {content.type !== 'quiz' && content.type !== 'survey' && (
 
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 mt-2">
                               <span className="text-[10px] text-slate-500 font-bold block">
                                 選択時のパラメータ加点調整
                               </span>
@@ -1534,17 +1580,17 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={(e) => {
+                                  onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      const base64String = reader.result as string;
-                                      const nextItems = q.pairItems.map(pi => pi.id === pItem.id ? { ...pi, leftEmojiOrUrl: base64String } : pi);
+                                    try {
+                                      const compressedDataUrl = await compressImage(file, 200, 200, 0.7); // ペアリングは小さめでOK
+                                      const nextItems = q.pairItems.map(pi => pi.id === pItem.id ? { ...pi, leftEmojiOrUrl: compressedDataUrl } : pi);
                                       updateQuestion(q.id, { pairItems: nextItems });
                                       playSound("bell");
-                                    };
-                                    reader.readAsDataURL(file);
+                                    } catch (err) {
+                                      console.error("Compression failed", err);
+                                    }
                                   }}
                                   className="text-[9px] text-slate-500 w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[9px] file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                                 />
@@ -1604,17 +1650,17 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  onChange={(e) => {
+                                  onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      const base64String = reader.result as string;
-                                      const nextItems = q.pairItems.map(pi => pi.id === pItem.id ? { ...pi, rightEmojiOrUrl: base64String } : pi);
+                                    try {
+                                      const compressedDataUrl = await compressImage(file, 200, 200, 0.7); // ペアリングは小さめでOK
+                                      const nextItems = q.pairItems.map(pi => pi.id === pItem.id ? { ...pi, rightEmojiOrUrl: compressedDataUrl } : pi);
                                       updateQuestion(q.id, { pairItems: nextItems });
                                       playSound("bell");
-                                    };
-                                    reader.readAsDataURL(file);
+                                    } catch (err) {
+                                      console.error("Compression failed", err);
+                                    }
                                   }}
                                   className="text-[9px] text-slate-500 w-full cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[9px] file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                                 />
@@ -1896,15 +1942,16 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = (ev) => {
-                                      const updated = content.results.map(r => r.id === result.id ? { ...r, imageUrl: ev.target?.result as string } : r);
+                                    try {
+                                      const compressedDataUrl = await compressImage(file, 800, 800, 0.7);
+                                      const updated = content.results.map(r => r.id === result.id ? { ...r, imageUrl: compressedDataUrl } : r);
                                       setContent({ ...content, results: updated });
-                                    };
-                                    reader.readAsDataURL(file);
+                                    } catch (err) {
+                                      console.error("Compression failed", err);
+                                    }
                                   }
                                 }}
                               />
