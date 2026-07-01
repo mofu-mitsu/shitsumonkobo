@@ -659,8 +659,13 @@ async function start() {
         if (content) {
           title = `${content.title} - しつもん工房`;
           desc = content.description || desc;
-          if (content.results && content.results.length > 0 && content.results[0].imageUrl && !content.results[0].imageUrl.startsWith("data:")) {
-            img = content.results[0].imageUrl;
+          if (content.results && content.results.length > 0 && content.results[0].imageUrl) {
+            const resultImg = content.results[0].imageUrl;
+            if (resultImg.startsWith("http")) {
+              img = resultImg;
+            } else if (resultImg.startsWith("/")) {
+              img = `https://${req.get('host')}${resultImg}`;
+            }
           }
         }
       }
