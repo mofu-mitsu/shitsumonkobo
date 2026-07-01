@@ -262,14 +262,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
   };
 
   // 選択肢の更新
-  const updateChoice = (qId: string, choiceId: string, text: string, scores: Record<string, number>, isCorrect?: boolean) => {
+  const updateChoice = (qId: string, choiceId: string, text: string, scores: Record<string, number>, isCorrect?: boolean, feedback?: string) => {
     setContent(prev => ({
       ...prev,
       questions: prev.questions.map(q => {
         if (q.id === qId) {
           return {
             ...q,
-            choices: q.choices.map(c => c.id === choiceId ? { ...c, text, scores, isCorrect: isCorrect !== undefined ? isCorrect : c.isCorrect } : c)
+            choices: q.choices.map(c => c.id === choiceId ? { ...c, text, scores, isCorrect: isCorrect !== undefined ? isCorrect : c.isCorrect, feedback: feedback !== undefined ? feedback : c.feedback } : c)
           };
         }
         return q;
@@ -602,6 +602,39 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                     onChange={(e) => setContent({ ...content, title: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-400 transition-colors"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">🖼️ 表紙の画像 (URL・任意)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例: https://... (または絵文字も可)"
+                      value={content.coverImageUrl || ""}
+                      onChange={(e) => setContent({ ...content, coverImageUrl: e.target.value })}
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-400 transition-colors"
+                    />
+                    <label className="bg-sky-100 hover:bg-sky-200 text-sky-700 px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center justify-center whitespace-nowrap">
+                      アップロード
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target?.result) {
+                                setContent({ ...content, coverImageUrl: event.target.result as string });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div>
@@ -1120,15 +1153,28 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               )}
 
                               {/* 選択肢テキスト */}
-                              <input
-                                type="text"
-                                value={choice.text}
-                                onChange={(e) => {
-                                  updateChoice(q.id, choice.id, e.target.value, choice.scores);
-                                }}
-                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 flex-1 placeholder-slate-400 focus:outline-none"
-                                placeholder="選択肢のテキスト"
-                              />
+                              <div className="flex-1 space-y-1">
+                                <input
+                                  type="text"
+                                  value={choice.text}
+                                  onChange={(e) => {
+                                    updateChoice(q.id, choice.id, e.target.value, choice.scores);
+                                  }}
+                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+                                  placeholder="選択肢のテキスト"
+                                />
+                                {content.type === 'quiz' && (
+                                  <input
+                                    type="text"
+                                    value={choice.feedback || ""}
+                                    onChange={(e) => {
+                                      updateChoice(q.id, choice.id, choice.text, choice.scores, undefined, e.target.value);
+                                    }}
+                                    className="w-full bg-white border border-emerald-200/50 rounded-lg px-3 py-1.5 text-[10px] text-emerald-700 placeholder-emerald-300 focus:outline-none focus:border-emerald-300"
+                                    placeholder="この選択肢を選んだときの個別の解説文（任意）"
+                                  />
+                                )}
+                              </div>
                               <button
                                 onClick={() => removeChoice(q.id, choice.id)}
                                 className="text-slate-400 hover:text-red-500 px-1.5 cursor-pointer"
@@ -1370,36 +1416,55 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             )}
 
                             {/* 記述一致時加点 */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-slate-500 block font-sans">
-                                一致時の属性加算値
-                              </span>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                {content.scoringAttributes.map((attr) => {
-                                  const scoreVal = rule.scores[attr] || 0;
-                                  return (
-                                    <div key={attr} className="bg-white px-2 py-1 rounded-lg border border-slate-200 flex justify-between items-center">
-                                      <span className="text-[10px] text-slate-500 font-bold">{attr}</span>
-                                      <input
-                                        type="number"
-                                        value={scoreVal}
-                                        onChange={(e) => {
-                                          const nextRules = q.textRules.map(tr => {
-                                            if (tr.id === rule.id) {
-                                              const nextScores = { ...tr.scores };
-                                              nextScores[attr] = parseInt(e.target.value) || 0;
-                                              return { ...tr, scores: nextScores };
-                                            }
-                                            return tr;
-                                          });
-                                          updateQuestion(q.id, { textRules: nextRules });
-                                        }}
-                                        className="bg-slate-50 text-center text-xs text-emerald-600 font-bold border border-slate-200 rounded w-10 py-0.5"
-                                      />
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                            <div className="space-y-1 mt-2">
+                              {content.type === 'quiz' ? (
+                                <label className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={rule.isCorrect || false}
+                                    onChange={(e) => {
+                                      const nextRules = q.textRules.map(tr => {
+                                        if (tr.id === rule.id) return { ...tr, isCorrect: e.target.value === 'on' || e.target.checked };
+                                        return tr;
+                                      });
+                                      updateQuestion(q.id, { textRules: nextRules });
+                                    }}
+                                  />
+                                  この文字が含まれていたら正解にする
+                                </label>
+                              ) : (
+                                <>
+                                  <span className="text-[10px] text-slate-500 block font-sans">
+                                    一致時の属性加算値
+                                  </span>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {content.scoringAttributes.map((attr) => {
+                                      const scoreVal = rule.scores[attr] || 0;
+                                      return (
+                                        <div key={attr} className="bg-white px-2 py-1 rounded-lg border border-slate-200 flex justify-between items-center">
+                                          <span className="text-[10px] text-slate-500 font-bold">{attr}</span>
+                                          <input
+                                            type="number"
+                                            value={scoreVal}
+                                            onChange={(e) => {
+                                              const nextRules = q.textRules.map(tr => {
+                                                if (tr.id === rule.id) {
+                                                  const nextScores = { ...tr.scores };
+                                                  nextScores[attr] = parseInt(e.target.value) || 0;
+                                                  return { ...tr, scores: nextScores };
+                                                }
+                                                return tr;
+                                              });
+                                              updateQuestion(q.id, { textRules: nextRules });
+                                            }}
+                                            className="bg-slate-50 text-center text-xs text-emerald-600 font-bold border border-slate-200 rounded w-10 py-0.5"
+                                          />
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1781,7 +1846,9 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1">👑 結果の二つ名（タイトル）</label>
+                          <label className="block text-xs font-bold text-slate-600 mb-1">
+                            {content.type === 'survey' ? '👑 サンクスメッセージのタイトル（見出し）' : '👑 結果の二つ名（タイトル）'}
+                          </label>
                           <input
                             type="text"
                             value={result.title}
@@ -1981,7 +2048,11 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
 
                         {result.imageUrl && (
                           <div className="h-[80px] bg-white border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center shadow-xs">
-                            <img src={result.imageUrl} alt="" className="h-full w-full object-cover" />
+                            {result.imageUrl.startsWith('http') || result.imageUrl.startsWith('data:') ? (
+                              <img src={result.imageUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="text-4xl drop-shadow-md py-1 text-center">{result.imageUrl}</div>
+                            )}
                           </div>
                         )}
                       </div>
