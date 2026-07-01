@@ -215,6 +215,27 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       
       let fbExplanation = fbIsCorrect ? currentQ.correctFeedback : currentQ.incorrectFeedback;
       fbExplanation = fbExplanation || "";
+      
+      // 選択肢個別のフィードバックがあれば追加する
+      if (currentQ.type === 'radio' || currentQ.type === 'five_choices' || currentQ.type === 'dropdown') {
+        const cId = textAnswers[currentQ.id];
+        const c = currentQ.choices.find(c => c.id === cId);
+        if (c && c.feedback) {
+          fbExplanation = fbExplanation ? `${c.feedback}\n\n${fbExplanation}` : c.feedback;
+        }
+      } else if (currentQ.type === 'checkbox') {
+        const ansMap = checkboxAnswers[currentQ.id] || {};
+        const feedbacks: string[] = [];
+        currentQ.choices.forEach(c => {
+          if (ansMap[c.id] && c.feedback) {
+            feedbacks.push(c.feedback);
+          }
+        });
+        if (feedbacks.length > 0) {
+          const combinedFb = feedbacks.join('\n');
+          fbExplanation = fbExplanation ? `${combinedFb}\n\n${fbExplanation}` : combinedFb;
+        }
+      }
 
       setFeedbackModal({ show: true, type: 'quiz', isCorrect: fbIsCorrect, explanation: fbExplanation });
       playSound(fbIsCorrect ? "correct" : "incorrect");
@@ -1085,10 +1106,22 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         {!isStarted && !isFinished && (
           <div className="max-w-xl mx-auto w-full space-y-6 text-center animate-fade-in">
             
+            {content.coverImageUrl && (
+              <div className="w-full text-center mb-6">
+                {content.coverImageUrl.startsWith('http') || content.coverImageUrl.startsWith('data:') ? (
+                  <img src={content.coverImageUrl} alt="Cover" className="mx-auto max-h-64 rounded-2xl object-cover shadow-md border border-white/40" />
+                ) : (
+                  <div className="text-8xl drop-shadow-md">{content.coverImageUrl}</div>
+                )}
+              </div>
+            )}
+
             {/* ガチャと診断等でイラスト分け */}
-            <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center border border-teal-100">
-              {content.type === 'gacha' ? <Ticket size={40} className="animate-bounce" /> : <Milestone size={40} />}
-            </div>
+            {!content.coverImageUrl && (
+              <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center border border-teal-100">
+                {content.type === 'gacha' ? <Ticket size={40} className="animate-bounce" /> : <Milestone size={40} />}
+              </div>
+            )}
 
             <div className="space-y-2">
               <h1 className="text-2xl font-black text-slate-900 tracking-tight">{content.title}</h1>
@@ -1306,7 +1339,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                     rows={3}
                     value={textAnswers[currentQ.id] || ""}
                     onChange={(e) => handleTextChange(e.target.value)}
-                    placeholder="ここに自由にテキストを打ち込んでね（例：好き、がっかり等）"
+                    placeholder="ここに自由にテキストを打ち込んでね"
                     className="w-full bg-white border border-sky-100 rounded-xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                   />
                   <div className="text-right text-[10px] text-slate-400">
