@@ -62,6 +62,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   // 実行時質問リスト
   const [playQuestions, setPlayQuestions] = useState<ShitsumonKobo_Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [historyStack, setHistoryStack] = useState<number[]>([]);
 
   // 回答データ状態
   const [scores, setScores] = useState<Record<string, number>>({});
@@ -201,7 +202,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         });
         if (anySelected && allCorrect) fbIsCorrect = true;
       } else if (currentQ.type === 'pairing') {
-        fbIsCorrect = (pairingScores[currentQ.id] === 100);
+        const pScore = pairingScores[currentQ.id] || 0;
+        fbIsCorrect = (pScore === 100);
       } else if (currentQ.type === 'text') {
         const val = textAnswers[currentQ.id] || "";
         const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => val.includes(kw)));
@@ -214,7 +216,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       }
       
       let fbExplanation = fbIsCorrect ? currentQ.correctFeedback : currentQ.incorrectFeedback;
-      fbExplanation = fbExplanation || "";
+      fbExplanation = fbExplanation || (fbIsCorrect ? "正解！🎉" : "残念...😢");
       
       // 選択肢個別のフィードバックがあれば追加する
       if (currentQ.type === 'radio' || currentQ.type === 'five_choices' || currentQ.type === 'dropdown') {
@@ -324,7 +326,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         const selectedChoice = q.choices.find(c => c.id === choiceId);
         if (selectedChoice) {
           if (content.type === 'quiz' && selectedChoice.isCorrect) {
-            finalScores['correct'] += 1;
+            finalScores['correct'] += (q.scoreWeight ?? 1);
           }
           if (selectedChoice.scores) {
             Object.entries(selectedChoice.scores).forEach(([attr, val]) => {
@@ -352,14 +354,14 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           }
         });
         if (content.type === 'quiz' && anySelected && allCorrect) {
-          finalScores['correct'] += 1;
+          finalScores['correct'] += (q.scoreWeight ?? 1);
         }
       } else if (q.type === 'pairing') {
         const pairingScore = pairingScores[q.id] || 0; // これは 0〜100 のパーセンテージになっている
         if (content.type === 'quiz') {
            // ペアリングの場合、1ペア正解で25ptのような計算がPairingGame内部でされているが、
            // クイズなら満点のパーセンテージを基に点数を与えるなど…一旦そのまま加算
-           finalScores['correct'] += (pairingScore === 100 ? 1 : 0); // 1問扱いならこう？
+           finalScores['correct'] += (pairingScore === 100 ? (q.scoreWeight ?? 1) : 0);
         } else if (content.type !== 'survey' && q.pairingAttributeScores) {
            // 診断モードの場合、pairingAttributeScores に設定された満点スコアを、正解率(0~100)で按分して加算
            Object.entries(q.pairingAttributeScores).forEach(([attr, maxScore]) => {
@@ -373,7 +375,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         const textValue = textAnswers[q.id] || '';
         const matchingRule = q.textRules.find(r => !r.isFallback && r.keywords.some(kw => textValue.includes(kw)));
         if (matchingRule) {
-           if (content.type === 'quiz' && matchingRule.isCorrect) finalScores['correct'] += 1;
+           if (content.type === 'quiz' && matchingRule.isCorrect) finalScores['correct'] += (q.scoreWeight ?? 1);
            if (matchingRule.scores) {
               Object.entries(matchingRule.scores).forEach(([attr, val]) => {
                 finalScores[attr] = (finalScores[attr] || 0) + Number(val);
@@ -415,7 +417,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
          if (content.type === 'quiz') {
            const cMin = q.sliderCorrectMin ?? q.sliderMin;
            const cMax = q.sliderCorrectMax ?? q.sliderMax;
-           if (val >= cMin && val <= cMax) finalScores['correct'] += 1;
+           if (val >= cMin && val <= cMax) finalScores['correct'] += (q.scoreWeight ?? 1);
          }
       }
     });
@@ -425,18 +427,31 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
   // 前の問題へ戻る
   const goToPrev = () => {
-    let prevIdx = currentIdx - 1;
-    while(prevIdx >= 0 && !isQuestionVisible(playQuestions[prevIdx])) {
-      prevIdx--;
-    }
-    if (prevIdx >= 0) {
-      setCurrentIdx(prevIdx);
-      playSound("bloop");
+    if (historyStack.length > 0) {
+      const newStack = [...historyStack];
+      const prev = newStack.pop();
+      if (prev !== undefined) {
+        setHistoryStack(newStack);
+        setCurrentIdx(prev);
+        playSound("bloop");
+      }
+    } else {
+      // 履歴がない場合のフォールバック（従来の戻るロジック）
+      let prevIdx = currentIdx - 1;
+      while(prevIdx >= 0 && !isQuestionVisible(playQuestions[prevIdx])) {
+        prevIdx--;
+      }
+      if (prevIdx >= 0) {
+        setCurrentIdx(prevIdx);
+        playSound("bloop");
+      }
     }
   };
 
   // 次の問題へ、または終了
   const goToNext = () => {
+    setHistoryStack(prev => [...prev, currentIdx]);
+
     // ランダム遭遇 (約15%の確率で発生)
     if (content.gimmicks?.enableSecretLetter && !secretLetterOpened && Math.random() < 0.20 && currentIdx > 0 && currentIdx < playQuestions.length - 1) {
       setShowSecretLetter(true);
@@ -447,9 +462,47 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       setTimeout(() => setShowEncounter(false), 3000);
     }
 
+    const currentQ = playQuestions[currentIdx];
+    let targetQuestionId: string | undefined;
+
+    // 現在の質問の回答から、ジャンプ先を探す
+    if (currentQ && ['radio', 'five_choices', 'dropdown'].includes(currentQ.type)) {
+      const cId = textAnswers[currentQ.id];
+      const c = currentQ.choices.find(c => c.id === cId);
+      if (c && c.nextQuestionId) targetQuestionId = c.nextQuestionId;
+    } else if (currentQ && currentQ.type === 'text') {
+      const val = textAnswers[currentQ.id] || "";
+      const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => val.includes(kw)));
+      if (rule && rule.nextQuestionId) targetQuestionId = rule.nextQuestionId;
+      else {
+        const fallback = currentQ.textRules?.find(r => r.isFallback);
+        if (fallback && fallback.nextQuestionId) targetQuestionId = fallback.nextQuestionId;
+      }
+    }
+    
+    // 選択肢で指定されていない場合は、質問自体のデフォルトジャンプ先を探す
+    if (!targetQuestionId && currentQ && currentQ.nextQuestionId) {
+      targetQuestionId = currentQ.nextQuestionId;
+    }
+
     let nextIdx = currentIdx + 1;
-    while(nextIdx < playQuestions.length && !isQuestionVisible(playQuestions[nextIdx])) {
-      nextIdx++;
+
+    if (targetQuestionId === 'FINISH') {
+      nextIdx = playQuestions.length; // 終了
+    } else if (targetQuestionId) {
+      const targetIdx = playQuestions.findIndex(q => q.id === targetQuestionId);
+      if (targetIdx !== -1) {
+        nextIdx = targetIdx;
+      } else {
+        // 見つからない場合は従来通り
+        while(nextIdx < playQuestions.length && !isQuestionVisible(playQuestions[nextIdx])) {
+          nextIdx++;
+        }
+      }
+    } else {
+      while(nextIdx < playQuestions.length && !isQuestionVisible(playQuestions[nextIdx])) {
+        nextIdx++;
+      }
     }
 
     if (nextIdx < playQuestions.length) {
@@ -1763,34 +1816,35 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                   {finalResult.description}
                 </p>
 
-                {/* 採点詳細グラフメーター (みつき流属性別表示) */}
-                <div className="pt-2 border-t border-sky-200/50 space-y-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block font-mono">
-                    📊 集計されたあなたの各パラメータ詳細：
-                  </span>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {content.scoringAttributes.map((attr, idx) => {
-                      const finalScore = scores[attr] || 0;
-                      return (
-                        <div key={attr} className="bg-white p-2 rounded-lg border border-sky-100 shadow-sm">
-                          <div className="flex justify-between text-[10px] text-slate-600 font-bold mb-1">
-                            <span>{attr}</span>
-                            <span className="font-mono text-teal-600 text-xs">
-                              {finalScore > 0 ? `+${finalScore}` : finalScore}
-                            </span>
+                {content.type !== 'quiz' && content.type !== 'gacha' && content.scoringAttributes && content.scoringAttributes.length > 0 && (
+                  <div className="pt-2 border-t border-sky-200/50 space-y-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase block font-mono">
+                      📊 集計されたあなたの各パラメータ詳細：
+                    </span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {content.scoringAttributes.map((attr, idx) => {
+                        const finalScore = scores[attr] || 0;
+                        return (
+                          <div key={attr} className="bg-white p-2 rounded-lg border border-sky-100 shadow-sm">
+                            <div className="flex justify-between text-[10px] text-slate-600 font-bold mb-1">
+                              <span>{attr}</span>
+                              <span className="font-mono text-teal-600 text-xs">
+                                {finalScore > 0 ? `+${finalScore}` : finalScore}
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-sky-50 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-sky-400 h-full rounded-full" 
+                                style={{ width: `${Math.min(Math.max((finalScore + 5) * 10, 5), 100)}%` }} // 最小補正
+                              />
+                            
+        </div>
                           </div>
-                          <div className="w-full h-1.5 bg-sky-50 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-sky-400 h-full rounded-full" 
-                              style={{ width: `${Math.min(Math.max((finalScore + 5) * 10, 5), 100)}%` }} // 最小補正
-                            />
-                          
-      </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* アクションボタン */}
@@ -2007,7 +2061,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               )}
               <button
                 onClick={closeFeedbackAndNext}
-                className="w-full bg-slate-850 hover:bg-black text-white rounded-xl py-3 text-sm font-bold shadow-md hover:scale-101 active:scale-95 transition-all cursor-pointer"
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white rounded-xl py-3 text-sm font-bold shadow-md hover:scale-101 active:scale-95 transition-all cursor-pointer"
               >
                 {feedbackModal.type === 'quiz' ? '次の問題へ' : 'とじる'}
               </button>
