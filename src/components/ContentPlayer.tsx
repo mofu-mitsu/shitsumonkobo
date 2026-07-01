@@ -6,7 +6,7 @@ import TapBeatGame from "./TapBeatGame";
 import LsiCaterpillar from "./LsiCaterpillar";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, ArrowRight, RotateCcw, Share2, Milestone, HelpCircle, CheckCircle2, Ticket, Check, X, BarChart } from "lucide-react";
-import { savePlayLog, getPlayStats } from "../lib/playLogs";
+import { savePlayLog, getPlayStats, onSnapshotPlayStats } from "../lib/playLogs";
 import confetti from "canvas-confetti";
 
 interface ContentPlayerProps {
@@ -206,6 +206,11 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         const val = textAnswers[currentQ.id] || "";
         const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => val.includes(kw)));
         if (rule && rule.isCorrect) fbIsCorrect = true;
+      } else if (currentQ.type === 'slider') {
+        const val = sliderAnswers[currentQ.id] !== undefined ? sliderAnswers[currentQ.id] : (currentQ.sliderMin + currentQ.sliderMax) / 2;
+        const min = currentQ.sliderCorrectMin ?? currentQ.sliderMin;
+        const max = currentQ.sliderCorrectMax ?? currentQ.sliderMax;
+        if (val >= min && val <= max) fbIsCorrect = true;
       }
       
       let fbExplanation = fbIsCorrect ? currentQ.correctFeedback : currentQ.incorrectFeedback;
@@ -384,6 +389,12 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
             Object.entries(q.sliderScores).forEach(([attr, multiplier]) => {
               finalScores[attr] = (finalScores[attr] || 0) + (val * Number(multiplier));
             });
+         }
+
+         if (content.type === 'quiz') {
+           const cMin = q.sliderCorrectMin ?? q.sliderMin;
+           const cMax = q.sliderCorrectMax ?? q.sliderMax;
+           if (val >= cMin && val <= cMax) finalScores['correct'] += 1;
          }
       }
     });
@@ -661,13 +672,20 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     };
   };
 
-  const finalResult = isFinished && content.type !== 'survey' ? getFinalResult() : null;
+  const finalResult = isFinished ? getFinalResult() : null;
 
   // 終了時にログ保存
-  const loadSurveyStats = async () => {
-      const logs = await getPlayStats(content.id);
-      setSurveyStats(logs);
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    if (isFinished && content.type === 'survey') {
+      unsubscribe = onSnapshotPlayStats(content.id, (logs) => {
+        setSurveyStats(logs);
+      });
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
     };
+  }, [isFinished, content.id, content.type]);
 
   useEffect(() => {
     if (isFinished) {
@@ -692,7 +710,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           });
           
           if (content.type === 'survey' && (content.surveyShowStats !== false)) {
-            loadSurveyStats();
+            // Stats are now loaded via real-time listener
           }
         } catch (e) {
           console.error("Play log save failed:", e);
@@ -703,11 +721,24 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   }, [isFinished]);
 
   // ---------------- SNSシェア(X/Twitter) ----------------
-  const loadDashboard = async () => {
-    const logs = await getPlayStats(content.id);
-    setPlayLogs(logs);
+  const dashboardUnsubscribeRef = useRef<(() => void) | null>(null);
+
+  const loadDashboard = () => {
     setShowDashboard(true);
+    if (!dashboardUnsubscribeRef.current) {
+      dashboardUnsubscribeRef.current = onSnapshotPlayStats(content.id, (logs) => {
+        setPlayLogs(logs);
+      });
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (dashboardUnsubscribeRef.current) {
+        dashboardUnsubscribeRef.current();
+      }
+    };
+  }, []);
 
   // ---------------- BGM (バックグラウンドミュージック) ----------------
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
@@ -719,9 +750,9 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       src = content.bgmUrl;
     } else if (content.bgmMode === 'preset' && content.bgmPreset) {
       // 提供可能なフリーBGMなどのURL。今回は仮のモック用短め音源などを指定。
-      if (content.bgmPreset === 'relax') src = 'https://cdn.pixabay.com/download/audio/2022/02/07/audio_c6f2a67c52.mp3';
+      if (content.bgmPreset === 'relax') src = 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3';
       else if (content.bgmPreset === 'pop') src = 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3';
-      else if (content.bgmPreset === 'cyber') src = 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b8175d27.mp3';
+      else if (content.bgmPreset === 'cyber') src = 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3';
       else if (content.bgmPreset === '8bit') src = 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3';
     }
 
@@ -1071,7 +1102,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               </p>
             </div>
 
-            <div className="bg-sky-50/40 border border-sky-100/70 rounded-2xl p-5 text-sm text-slate-600 leading-relaxed text-left">
+            <div className="bg-sky-50/40 border border-sky-100/70 rounded-2xl p-5 text-sm text-slate-600 leading-relaxed text-left whitespace-pre-wrap">
               {content.description || "このしつもんに対する説明はありません。早速はじめて、個性に触れてみましょう！"}
             </div>
 
@@ -1129,7 +1160,16 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
             {/* 質問本体カード */}
             <div className="bg-white border border-sky-100/80 rounded-3xl p-6 md:p-8 space-y-5 shadow-sm relative">
-              <h2 className="text-lg font-bold text-slate-900 leading-relaxed select-text">
+              {currentQ.imageUrlOrEmoji && (
+                <div className="text-center mb-4">
+                  {currentQ.imageUrlOrEmoji.startsWith('http') || currentQ.imageUrlOrEmoji.startsWith('data:') ? (
+                    <img src={currentQ.imageUrlOrEmoji} alt="Question" className="mx-auto max-h-48 rounded-xl object-contain shadow-sm border border-slate-100" />
+                  ) : (
+                    <div className="text-6xl">{currentQ.imageUrlOrEmoji}</div>
+                  )}
+                </div>
+              )}
+              <h2 className="text-lg font-bold text-slate-900 leading-relaxed select-text whitespace-pre-wrap">
                 {currentQ.text}
               </h2>
 
@@ -1522,24 +1562,33 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
 
         {/* =============== 回答終了の結果画面 =============== */}
         
-        {/* =============== アンケートの専用終了画面 =============== */}
-        {isFinished && content.type === 'survey' && (
-          <div className="max-w-2xl mx-auto w-full space-y-6">
-            <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400" />
-              
-              <div className="space-y-2">
-                <div className="text-sm font-bold text-teal-600 bg-teal-50 inline-block px-3 py-1 rounded-full border border-teal-100">
-                  ご協力ありがとうございました！
-                </div>
-                <h3 className="text-2xl font-black text-slate-800">
-                  アンケート完了
-                </h3>
+      {/* =============== アンケートの専用終了画面 =============== */}
+      {isFinished && content.type === 'survey' && (
+        <div className="max-w-2xl mx-auto w-full space-y-6 animate-fade-in">
+          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400" />
+            
+            <div className="space-y-2">
+              <div className="text-sm font-bold text-teal-600 bg-teal-50 inline-block px-3 py-1 rounded-full border border-teal-100">
+                ご協力ありがとうございました！
               </div>
+              <h3 className="text-2xl font-black text-slate-800">
+                {finalResult?.title || "アンケート完了"}
+              </h3>
+            </div>
 
-              <div className="text-sm text-slate-600">
-                あなたの回答が送信されました。ご協力ありがとうございます。
+            {finalResult?.imageUrl && !finalResult.imageUrl.startsWith("✨") && (
+              <div className="max-w-xs mx-auto">
+                <img src={finalResult.imageUrl} alt={finalResult.title} className="w-full h-auto object-cover rounded-xl shadow-sm border border-slate-100" />
               </div>
+            )}
+            {finalResult?.imageUrl && finalResult.imageUrl.startsWith("✨") && (
+              <div className="text-6xl my-4 text-center">{finalResult.imageUrl.replace("✨", "").trim()}</div>
+            )}
+
+            <div className="text-sm text-slate-600 whitespace-pre-wrap">
+              {finalResult?.description || "あなたの回答が送信されました。ご協力ありがとうございます。"}
+            </div>
 
               {(content.surveyShowStats !== false) && (
                 <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-left space-y-4">
@@ -1867,6 +1916,60 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               {content.gimmicks?.randomEventText || "猫が現れた！"}
               <br/><span className="text-[10px] text-slate-400 font-normal">特に意味はないようだ… (タップで閉じる)</span>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* フィードバックモーダル */}
+      <AnimatePresence>
+        {feedbackModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl space-y-6"
+            >
+              {feedbackModal.type === 'quiz' && (
+                <div className="space-y-4 text-center">
+                  <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${feedbackModal.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                    {feedbackModal.isCorrect ? <Check size={32} strokeWidth={3} /> : <X size={32} strokeWidth={3} />}
+                  </div>
+                  <h3 className={`text-xl font-bold ${feedbackModal.isCorrect ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {feedbackModal.isCorrect ? '正解！' : '残念…'}
+                  </h3>
+                  {feedbackModal.explanation && (
+                    <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                      {feedbackModal.explanation}
+                    </div>
+                  )}
+                </div>
+              )}
+              {feedbackModal.type === 'survey' && (
+                <div className="space-y-4 text-center">
+                  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-amber-100 text-amber-600">
+                    <Sparkles size={32} strokeWidth={3} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">イベント発生！</h3>
+                  {feedbackModal.explanation && (
+                    <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                      {feedbackModal.explanation}
+                    </div>
+                  )}
+                </div>
+              )}
+              <button
+                onClick={closeFeedbackAndNext}
+                className="w-full bg-slate-850 hover:bg-black text-white rounded-xl py-3 text-sm font-bold shadow-md hover:scale-101 active:scale-95 transition-all cursor-pointer"
+              >
+                {feedbackModal.type === 'quiz' ? '次の問題へ' : 'とじる'}
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
