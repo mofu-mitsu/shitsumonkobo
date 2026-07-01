@@ -242,7 +242,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-16 relative min-h-[220px]">
+      <div className="grid grid-cols-2 gap-8 sm:gap-16 relative min-h-[220px]">
         {/* 動的接続SVG */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
           <defs>
@@ -299,7 +299,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
             return (
               <div 
                 key={`left-${item.id}`}
-                className={`flex items-center justify-between p-3 rounded-xl shadow-md transition-all border cursor-pointer select-none ${
+                className={`flex items-center justify-between p-2 sm:p-3 rounded-xl shadow-md transition-all border cursor-pointer select-none ${
                   isSelected 
                     ? "border-cyan-500 bg-cyan-50/90 ring-2 ring-cyan-400/50 scale-102" 
                     : isConnected 
@@ -308,16 +308,16 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
                 }`}
                 onPointerDown={(e) => handlePointerDown(item.id, e)}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-12 h-12 flex items-center justify-center bg-sky-50 rounded-lg overflow-hidden border border-sky-100/50">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-sky-50 rounded-lg overflow-hidden border border-sky-100/50">
                     {item.leftEmojiOrUrl.startsWith("http") || item.leftEmojiOrUrl.startsWith("data:") ? (
-                      <img src={item.leftEmojiOrUrl} alt="" onLoad={updatePositions} className="w-10 h-10 object-contain rounded" />
+                      <img src={item.leftEmojiOrUrl} alt="" onLoad={updatePositions} className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded" />
                     ) : (
-                      <span className="text-2xl">{item.leftEmojiOrUrl || "✨"}</span>
+                      <span className="text-xl sm:text-2xl">{item.leftEmojiOrUrl || "✨"}</span>
                     )}
                   </div>
                   {item.leftLabel && (
-                    <span className="text-xs font-bold text-slate-700 max-w-[80px] truncate" title={item.leftLabel}>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-700 max-w-[50px] sm:max-w-[80px] truncate" title={item.leftLabel}>
                       {item.leftLabel}
                     </span>
                   )}
@@ -325,7 +325,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
                 
                 <div 
                   id={`dot-left-${item.id}`}
-                  className={`w-6 h-6 rounded-full border-2 transition-all ml-2 flex-shrink-0 flex items-center justify-center ${
+                  className={`w-4 h-4 sm:w-6 sm:h-6 rounded-full border-2 transition-all ml-1 sm:ml-2 flex-shrink-0 flex items-center justify-center ${
                     isSelected 
                       ? "bg-cyan-500 border-white scale-125" 
                       : isConnected 
@@ -333,7 +333,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
                       : "bg-sky-300 border-white hover:scale-125"
                   }`}
                 >
-                  <div className="w-2 h-2 rounded-full bg-white/50 pointer-events-none" />
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white/50 pointer-events-none" />
                 </div>
               </div>
             );
@@ -351,7 +351,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
               <div 
                 key={`right-${item.id}`}
                 data-right-id={item.id}
-                className={`flex items-center gap-3 justify-start p-3 rounded-xl shadow-md cursor-pointer transition-all border ${
+                className={`flex items-center gap-1 sm:gap-3 justify-start p-2 sm:p-3 rounded-xl shadow-md cursor-pointer transition-all border ${
                   isConnected 
                     ? "border-emerald-300 bg-emerald-50/60" 
                     : "border-sky-100 bg-white/90 hover:border-sky-300"
@@ -360,21 +360,21 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
               >
                 <div 
                   id={`dot-right-${item.id}`}
-                  className={`w-5 h-5 rounded-full border-2 transition-all mr-2 ${
+                  className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 transition-all mr-1 sm:mr-2 flex-shrink-0 ${
                     isConnected ? "bg-emerald-500 border-white" : "bg-sky-200 border-white"
                   }`}
                 />
                 
-                <div className="flex items-center gap-2">
-                  <div className="w-12 h-12 flex items-center justify-center bg-sky-50 rounded-lg overflow-hidden border border-sky-100/50">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center bg-sky-50 rounded-lg overflow-hidden border border-sky-100/50">
                     {item.rightEmojiOrUrl?.startsWith("http") || item.rightEmojiOrUrl?.startsWith("data:") ? (
-                      <img src={item.rightEmojiOrUrl} alt="" onLoad={updatePositions} className="w-10 h-10 object-contain rounded" />
+                      <img src={item.rightEmojiOrUrl} alt="" onLoad={updatePositions} className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded" />
                     ) : (
-                      <span className="text-2xl">{item.rightEmojiOrUrl || "❓"}</span>
+                      <span className="text-xl sm:text-2xl">{item.rightEmojiOrUrl || "❓"}</span>
                     )}
                   </div>
                   {item.rightLabel && (
-                    <span className="text-xs font-bold text-slate-700 max-w-[80px] truncate" title={item.rightLabel}>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-700 max-w-[50px] sm:max-w-[80px] truncate" title={item.rightLabel}>
                       {item.rightLabel}
                     </span>
                   )}
