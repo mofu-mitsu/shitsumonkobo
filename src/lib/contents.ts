@@ -61,3 +61,33 @@ export const deleteContent = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+export const syncUserPlayHistory = async (userId: string, history: ShitsumonKobo_Content[]): Promise<void> => {
+  try {
+    // Only save essential info to prevent document size limits
+    const minimalHistory = history.map(item => ({
+      id: item.id,
+      title: item.title,
+      type: item.type,
+      creatorName: item.creatorName || "",
+      description: item.description ? item.description.substring(0, 100) : "",
+      themeColorMode: item.themeColorMode || "auto",
+      customColor: item.customColor || "",
+    }));
+    await setDoc(doc(db, "user_profiles", userId), { playHistory: minimalHistory }, { merge: true });
+  } catch (error) {
+    console.error("Failed to sync play history", error);
+  }
+};
+
+export const getUserPlayHistory = async (userId: string): Promise<ShitsumonKobo_Content[]> => {
+  try {
+    const docSnap = await getDoc(doc(db, "user_profiles", userId));
+    if (docSnap.exists() && docSnap.data().playHistory) {
+      return docSnap.data().playHistory as ShitsumonKobo_Content[];
+    }
+  } catch (error) {
+    console.error("Failed to get play history", error);
+  }
+  return [];
+};
