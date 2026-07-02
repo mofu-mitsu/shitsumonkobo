@@ -36,7 +36,26 @@ const getAutoSeasonColor = () => {
 };
 
 export default function App() {
+  const isLine = navigator.userAgent.includes("Line");
+  const isTwitter = navigator.userAgent.includes("Twitter") || navigator.userAgent.includes("FBAV") || navigator.userAgent.includes("Instagram");
+  const isInAppBrowser = isLine || isTwitter;
+
+  if (isInAppBrowser && !sessionStorage.getItem('inAppBrowserAlertShown')) {
+    alert("【推奨環境のお知らせ】\nX(Twitter)やLINE等のアプリ内ブラウザでは、一部機能(画像アップロードや結果シェア等)が正常に動作しない場合があります。\n\n右下や右上のメニューから「Safariで開く」または「ブラウザで開く」を選択してご利用ください。");
+    sessionStorage.setItem('inAppBrowserAlertShown', 'true');
+  }
+
   const [season, setSeason] = useState(getAutoSeasonColor());
+
+  
+  // Check in-app browser
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const isInApp = ua.includes("Line") || ua.includes("Twitter") || ua.includes("Instagram");
+    if (isInApp) {
+      setToastMessage("Safari等のブラウザで開いてご利用ください（一部機能が制限されます）"); setTimeout(() => setToastMessage(""), 5000);
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -76,6 +95,7 @@ export default function App() {
 
   // 基本データステート
   const [publicContents, setPublicContents] = useState<ShitsumonKobo_Content[]>([]);
+  const [publicSort, setPublicSort] = useState<"newest" | "popular">("newest");
   const [myContents, setMyContents] = useState<ShitsumonKobo_Content[]>([]);
   const [playHistory, setPlayHistory] = useState<ShitsumonKobo_Content[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,18 +176,18 @@ export default function App() {
     handleUrlQuery();
   }, []);
 
+
   // サーバーの公開診断のロード
   const fetchPublicList = async () => {
     try {
       let list = await getPublicContents();
-      // デフォルトのしつもんがつねに残るようにする
       const dbIds = list.map(item => item.id);
-      const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id));
+      const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id)).map(s => ({...s, isDefault: true}));
       list = [...list, ...missingSamples];
       setPublicContents(list);
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
-      setPublicContents(initialSamples);
+      setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
     }
   };
 
@@ -746,6 +766,7 @@ export default function App() {
                     >
                       <option value="newest">新着順</option>
                       <option value="oldest">古い順</option>
+                      <option value="popular">人気順</option>
                     </select>
                   </div>
                 </div>
@@ -771,7 +792,17 @@ export default function App() {
                           (item.title.includes(searchQuery) || (item.description || '').includes(searchQuery)) &&
                           (searchCategory === 'all' || item.type === searchCategory)
                         )
-                        .sort((a, b) => sortOrder === 'newest' ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                        .sort((a, b) => {
+                          if (sortOrder === 'popular') {
+                            // Mock popular sort: sort by result count descending, or by string length of ID
+                            const scoreA = (a.results?.length || 0) * 10 + a.questions.length;
+                            const scoreB = (b.results?.length || 0) * 10 + b.questions.length;
+                            return scoreB - scoreA;
+                          }
+                          return sortOrder === 'newest' 
+                            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() 
+                            : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        })
                         .slice(0, visibleCount)
                         .map((item) => {
                         // 好みの着色にする
