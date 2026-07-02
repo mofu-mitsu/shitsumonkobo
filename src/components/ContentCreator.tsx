@@ -79,6 +79,42 @@ const compressImage = (file: File, maxWidth: number = 800, maxHeight: number = 8
   });
 };
 
+
+// 属性加点用の汎用エディタ
+const AttributeMultiplierEditor = ({ value, onChange, availableAttributes }: { value: Record<string, number> | undefined, onChange: (val: Record<string, number> | undefined) => void, availableAttributes: string[] }) => {
+  const attrs = ['Score', ...availableAttributes];
+  const currentVal = value || {};
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+      {attrs.map(attr => (
+        <div key={attr} className="bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200 flex flex-col justify-center">
+          <div className="flex justify-between text-[10px] text-slate-600">
+            <span className="font-bold truncate" title={attr}>{attr}</span>
+            <span className="font-mono text-emerald-600 font-bold">
+               {currentVal[attr] > 0 ? "+" + currentVal[attr] : currentVal[attr] || 0}
+            </span>
+          </div>
+          <input
+            type="number"
+            value={currentVal[attr] ?? ""}
+            onChange={(e) => {
+              const nextVal = { ...currentVal };
+              const v = Number(e.target.value);
+              if (!e.target.value || isNaN(v)) {
+                delete nextVal[attr];
+              } else {
+                nextVal[attr] = v;
+              }
+              onChange(Object.keys(nextVal).length > 0 ? nextVal : undefined);
+            }}
+            className="w-full mt-1 bg-white border border-slate-200 rounded px-1 py-0.5 text-xs text-center focus:outline-none focus:border-emerald-300"
+            placeholder="0"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
 export default function ContentCreator({ season, onSave, onCancel, initialContent, currentUser, showAlert }: ContentCreatorProps) {
   // テーマ色の決定
   const [content, setContent] = useState<ShitsumonKobo_Content>(() => {
@@ -1229,7 +1265,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               <select
                                 value={choice.nextQuestionId || ""}
                                 onChange={(e) => updateChoice(q.id, choice.id, choice.text, choice.scores, choice.isCorrect, choice.feedback, e.target.value)}
-                                className="flex-1 bg-white border border-slate-200 text-xs px-2 py-1.5 rounded-lg text-slate-700 focus:outline-none focus:border-sky-300"
+                                className="flex-1 w-0 min-w-0 bg-white border border-slate-200 text-xs px-2 py-1.5 rounded-lg text-slate-700 focus:outline-none focus:border-sky-300 truncate"
                               >
                                 <option value="">次の問題へ進む (デフォルト)</option>
                                 <option value="FINISH">🏁 ここで終了する</option>

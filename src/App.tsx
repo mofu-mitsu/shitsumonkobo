@@ -117,7 +117,7 @@ export default function App() {
   const [playHistory, setPlayHistory] = useState<ShitsumonKobo_Content[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCategory, setSearchCategory] = useState<'all' | 'diagnostic' | 'quiz' | 'survey' | 'gacha'>('all');
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(9);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sortOrder, setSortOrder] = useState('popular');
   const [toastMessage, setToastMessage] = useState("");
@@ -843,7 +843,11 @@ export default function App() {
                               </span>
                             </div>
 
-                            <div className="space-y-1">
+                            {(item.coverImageUrl || item.results?.[0]?.imageUrl) && (
+                              <div className="w-full h-32 mb-3 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                                <img src={item.coverImageUrl || item.results?.[0]?.imageUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+                              </div>
+                            )}\n<div className="space-y-1">
                               <h4 className="text-md font-bold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-1 leading-snug">
                                 {item.title}
                               </h4>
@@ -890,7 +894,7 @@ export default function App() {
                     ).length > visibleCount && (
                       <div className="flex justify-center mt-8">
                         <button
-                          onClick={() => setVisibleCount(v => v + 12)}
+                          onClick={() => setVisibleCount(v => v + 9)}
                           className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold px-6 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 text-xs flex items-center gap-2"
                         >
                           もっと見る
@@ -941,7 +945,11 @@ export default function App() {
                               </span>
                             </div>
 
-                            <div className="space-y-1">
+                            {(item.coverImageUrl || item.results?.[0]?.imageUrl) && (
+                              <div className="w-full h-32 mb-3 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                                <img src={item.coverImageUrl || item.results?.[0]?.imageUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+                              </div>
+                            )}\n<div className="space-y-1">
                               <h4 className="text-md font-bold text-slate-800 group-hover:text-sky-600 transition-colors">
                                 {item.title}
                               </h4>
