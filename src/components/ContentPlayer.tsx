@@ -185,8 +185,10 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   const proceedWithFeedbackCheck = () => {
     let showFb = false;
     let fbIsCorrect = false;
-
+    let fbExplanation = "";
+    
     if (content.type === 'quiz' && content.quizImmediateFeedback !== false) {
+      showFb = true;
       if (currentQ.type === 'radio' || currentQ.type === 'five_choices' || currentQ.type === 'dropdown') {
         const cId = textAnswers[currentQ.id];
         const c = currentQ.choices.find(c => c.id === cId);
@@ -206,7 +208,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         fbIsCorrect = (pScore === 100);
       } else if (currentQ.type === 'text') {
         const val = textAnswers[currentQ.id] || "";
-        const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => val.includes(kw)));
+        const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => kw.trim() && val.includes(kw.trim())));
         if (rule && rule.isCorrect) fbIsCorrect = true;
       } else if (currentQ.type === 'slider') {
         const val = sliderAnswers[currentQ.id] !== undefined ? sliderAnswers[currentQ.id] : (currentQ.sliderMin + currentQ.sliderMax) / 2;
@@ -215,7 +217,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         if (val >= min && val <= max) fbIsCorrect = true;
       }
       
-      let fbExplanation = fbIsCorrect ? currentQ.correctFeedback : currentQ.incorrectFeedback;
+      fbExplanation = fbIsCorrect ? currentQ.correctFeedback : currentQ.incorrectFeedback;
       fbExplanation = fbExplanation || (fbIsCorrect ? "正解！🎉" : "残念...😢");
       
       // 選択肢個別のフィードバックがあれば追加する
@@ -237,10 +239,37 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           const combinedFb = feedbacks.join('\n');
           fbExplanation = fbExplanation ? `${combinedFb}\n\n${fbExplanation}` : combinedFb;
         }
+      } else if (currentQ.type === 'text') {
+        const val = textAnswers[currentQ.id] || "";
+        const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => kw.trim() && val.includes(kw.trim())));
+        if (rule && rule.feedback) {
+          fbExplanation = fbExplanation ? `${rule.feedback}\n\n${fbExplanation}` : rule.feedback;
+        }
       }
+    } else {
+      // Not a quiz, but we might want to show feedback for text or choices
+      if (currentQ.type === 'text') {
+        const val = textAnswers[currentQ.id] || "";
+        const rule = currentQ.textRules?.find(r => !r.isFallback && r.keywords.some(kw => kw.trim() && val.includes(kw.trim())));
+        if (rule && rule.feedback) {
+          showFb = true;
+          fbIsCorrect = true; // Just styling
+          fbExplanation = rule.feedback;
+        }
+      } else if (currentQ.type === 'radio' || currentQ.type === 'five_choices' || currentQ.type === 'dropdown') {
+        const cId = textAnswers[currentQ.id];
+        const c = currentQ.choices.find(c => c.id === cId);
+        if (c && c.feedback) {
+          showFb = true;
+          fbIsCorrect = true;
+          fbExplanation = c.feedback;
+        }
+      }
+    }
 
-      setFeedbackModal({ show: true, type: 'quiz', isCorrect: fbIsCorrect, explanation: fbExplanation });
-      playSound(fbIsCorrect ? "correct" : "incorrect");
+    if (showFb) {
+      setFeedbackModal({ show: true, type: content.type === 'quiz' ? 'quiz' : 'survey', isCorrect: fbIsCorrect, explanation: fbExplanation });
+      playSound(fbIsCorrect ? "correct" : "correct");
       return;
     }
     
@@ -420,6 +449,10 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
            if (val >= cMin && val <= cMax) finalScores['correct'] += (q.scoreWeight ?? 1);
          }
       }
+    });
+
+    Object.entries(gimmickScores).forEach(([k, v]) => {
+      finalScores[k] = (finalScores[k] || 0) + v;
     });
 
     return finalScores;
@@ -879,14 +912,14 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       if (!finalResult) return;
       shareText = `【しつもん工房 診断発表】\nお題：${content.title}\n私の診断結果は「${finalResult.title}」でした！\n\n${finalResult.description.substring(0, 80)}…\nみんなも「しつもん工房」で遊んでみよう！`;
     }
-    const appUrl = `${window.location.origin}/?id=${content.id}`;
+    const appUrl = `https://shitsumonkobo.vercel.app/?id=${content.id}`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`;
     window.open(shareUrl, "_blank");
   };
 
   const [copiedLink, setCopiedLink] = useState(false);
   const handleCopyLink = () => {
-    const appUrl = `${window.location.origin}/?id=${content.id}`;
+    const appUrl = `https://shitsumonkobo.vercel.app/?id=${content.id}`;
     navigator.clipboard.writeText(appUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
