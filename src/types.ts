@@ -5,6 +5,7 @@
 
 // テーブル競合や連携に備えて、命名を「ShitsumonKobo_」で統一しています。
 export interface ShitsumonKobo_Choice {
+  nextQuestionId?: string;
   id: string;
   text: string;
   scores: Record<string, number>; // { Ni: 3, Ti: 1 } のような加点設定
@@ -35,10 +36,12 @@ export type ShitsumonKobo_QuestionType =
   | 'pairing';           // ペア線つなぎ
 
 export interface ShitsumonKobo_Choice {
+  nextQuestionId?: string;
   id: string;
   text: string;
   scores: Record<string, number>; // { Ni: 3, Ti: 1 } のような加点設定
   isCorrect?: boolean; // クイズ用の正解フラグ
+  feedback?: string; // クイズ用の個別選択肢ごとの解説文
 }
 
 export interface ShitsumonKobo_TextRule {
@@ -47,6 +50,7 @@ export interface ShitsumonKobo_TextRule {
   scores: Record<string, number>; // 該当したときの加点
   isFallback: boolean; // フォールバック回答として扱うか
   isCorrect?: boolean; // クイズ用の正解フラグ
+  feedback?: string; // 単語に一致したときの個別フィードバック（診断やアンケートでも表示）
 }
 
 export interface ShitsumonKobo_PairItem {
@@ -58,6 +62,8 @@ export interface ShitsumonKobo_PairItem {
 }
 
 export interface ShitsumonKobo_Question {
+  scoreWeight?: number; // クイズ時の配点
+  nextQuestionId?: string;
   id: string;
   text: string;
   type: ShitsumonKobo_QuestionType;
@@ -160,6 +166,7 @@ export interface ShitsumonKobo_Content {
   id: string;
   title: string;
   description: string;
+  coverImageUrl?: string;
   type: ShitsumonKobo_ContentType;
   quizMode?: 'instant' | 'summary'; // クイズモード：即時判定か、最後にまとめて結果か
   surveyShowStats?: boolean; // アンケートモードで終了時に投票率を表示するか
