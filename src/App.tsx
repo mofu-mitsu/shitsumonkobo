@@ -36,14 +36,31 @@ const getAutoSeasonColor = () => {
 };
 
 export default function App() {
-  const isLine = navigator.userAgent.includes("Line");
-  const isTwitter = navigator.userAgent.includes("Twitter") || navigator.userAgent.includes("FBAV") || navigator.userAgent.includes("Instagram");
-  const isInAppBrowser = isLine || isTwitter;
+  const handleLoginClick = async () => {
+    const isLine = navigator.userAgent.includes("Line");
+    const isTwitter = navigator.userAgent.includes("Twitter") || navigator.userAgent.includes("FBAV") || navigator.userAgent.includes("Instagram");
+    const isInAppBrowser = isLine || isTwitter;
 
-  if (isInAppBrowser && !sessionStorage.getItem('inAppBrowserAlertShown')) {
-    alert("【推奨環境のお知らせ】\nX(Twitter)やLINE等のアプリ内ブラウザでは、一部機能(画像アップロードや結果シェア等)が正常に動作しない場合があります。\n\n右下や右上のメニューから「Safariで開く」または「ブラウザで開く」を選択してご利用ください。");
-    sessionStorage.setItem('inAppBrowserAlertShown', 'true');
-  }
+    if (isInAppBrowser) {
+      alert("【推奨環境のお知らせ】\nX(Twitter)やLINE等のアプリ内ブラウザでは、ログインが正常に完了しない場合があります。\n\n右下や右上のメニューから「Safariで開く」または「ブラウザで開く」を選択してからログインをお試しください。");
+      return; // アラートを出して一旦止める（またはそのまま続行させるか。一旦そのまま続行でもいいが、基本は一旦止めるのが親切。でもユーザーがどうしてもと言うなら…いや、アラート出すだけにする？）
+      // ユーザーが「ログインボタンを押した時に出るようにして」と言っているので、アラートを出してそのまま await loginWithGoogle() を呼んでみる？
+      // いや、一旦 return したほうがいいかも。まぁ return しないで await loginWithGoogle() でもいいか。
+    }
+
+    try {
+      await loginWithGoogle();
+      setIsMobileMenuOpen(false);
+    } catch (err: any) {
+      if (err?.code === 'auth/operation-not-allowed') {
+        showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
+      } else {
+        console.log("Login popup closed or failed:", err);
+      }
+    }
+  };
+
+
 
   const [season, setSeason] = useState(getAutoSeasonColor());
 
@@ -102,7 +119,7 @@ export default function App() {
   const [searchCategory, setSearchCategory] = useState<'all' | 'diagnostic' | 'quiz' | 'survey' | 'gacha'>('all');
   const [visibleCount, setVisibleCount] = useState(12);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [sortOrder, setSortOrder] = useState('newest');
+  const [sortOrder, setSortOrder] = useState('popular');
   const [toastMessage, setToastMessage] = useState("");
   
   // ナビゲーション・ビュー制御
