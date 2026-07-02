@@ -11,7 +11,7 @@ export const initialSamples: ShitsumonKobo_Content[] = [
     themeColorMode: "auto",
     customColor: "#ec4899",
     scoringAttributes: ["Ni", "Ti", "Fe", "Se"],
-    createdAt: new Date().toISOString(),
+    createdAt: "2020-01-01T00:00:00.000Z",
     gimmicks: {
       enableLsiCaterpillar: true,
       caterpillarQuotes: [
@@ -183,7 +183,7 @@ export const initialSamples: ShitsumonKobo_Content[] = [
     themeColorMode: "auto",
     customColor: "#10b981",
     scoringAttributes: ["Score"],
-    createdAt: new Date().toISOString(),
+    createdAt: "2020-01-01T00:00:00.000Z",
     gimmicks: {
       enableLsiCaterpillar: true,
       caterpillarQuotes: [
@@ -245,7 +245,7 @@ export const initialSamples: ShitsumonKobo_Content[] = [
     themeColorMode: "auto",
     customColor: "#3b82f6",
     scoringAttributes: ["QuizScore"],
-    createdAt: new Date().toISOString(),
+    createdAt: "2020-01-01T00:00:00.000Z",
     gimmicks: {
       enableLsiCaterpillar: false,
       caterpillarQuotes: [],
