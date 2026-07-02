@@ -708,11 +708,36 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         }
       }
 
-      if (type === 'attribute_order' && r.conditionOrder && r.conditionOrder.length > 0) {
-        // 並び順判定
-        const sortedAttrs = Object.keys(finalScores).sort((a, b) => finalScores[b] - finalScores[a]);
-        // 指定された順序が上位から一致しているか確認
-        return r.conditionOrder.every((attr, idx) => sortedAttrs[idx] === attr);
+      if (type === 'attribute_order' && r.conditionOrder) {
+        // 前バージョンで文字列として保存されているケースの救済
+        let orderArr = Array.isArray(r.conditionOrder) ? r.conditionOrder : [];
+        if (!Array.isArray(r.conditionOrder) && typeof r.conditionOrder === 'string') {
+           const val = r.conditionOrder as string;
+           orderArr = val.includes('>') || val.includes(',') || val.includes(' ') || val.includes('＞') || val.includes('、')
+                ? val.split(/[^a-zA-Z0-9_]+/).filter(Boolean)
+                : val.split(/(?!$)/u).filter(c => c.trim() !== '');
+        }
+        
+        if (orderArr.length > 0) {
+          // 'correct' などの不要な属性は除外して純粋に評価対象の属性だけにする
+          const validAttrs = Object.keys(finalScores).filter(k => k !== 'correct');
+          // スコア順にソート（同点の場合は指定された orderArr の順序を優先する等も考えられるが、基本はスコア順）
+          const sortedAttrs = validAttrs.sort((a, b) => {
+            const diff = finalScores[b] - finalScores[a];
+            if (diff !== 0) return diff;
+            // 同点の場合は、orderArrで前にある方を優先する（タイブレーク）
+            const idxA = orderArr.indexOf(a);
+            const idxB = orderArr.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            return 0;
+          });
+          
+          // 指定された順序が上位から一致しているか確認（大文字小文字の違いなどを吸収）
+          return orderArr.every((attr, idx) => {
+             if (!sortedAttrs[idx]) return false;
+             return sortedAttrs[idx].toLowerCase() === attr.toLowerCase();
+          });
+        }
       }
 
       if (type === 'attribute_sum' && r.conditionSumAttributes && r.conditionSumAttributes.length > 0) {
@@ -2084,7 +2109,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                   <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-amber-100 text-amber-600">
                     <Sparkles size={32} strokeWidth={3} />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800">イベント発生！</h3>
+                  <h3 className="text-xl font-bold text-slate-800">メッセージ</h3>
                   {feedbackModal.explanation && (
                     <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
                       {feedbackModal.explanation}
