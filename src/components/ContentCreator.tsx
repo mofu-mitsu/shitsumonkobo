@@ -868,7 +868,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       placeholder="0（制限なし）"
                       value={content.limitQuestionsCount || ""}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value) || 0;
+                        const val = e.target.value === '' ? undefined : Number(e.target.value);
                         setContent({ ...content, limitQuestionsCount: val });
                       }}
                       className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 w-full text-center font-mono focus:outline-none"
@@ -1194,17 +1194,15 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
                                   placeholder="選択肢のテキスト"
                                 />
-                                {content.type === 'quiz' && (
-                                  <input
+                                <input
                                     type="text"
                                     value={choice.feedback || ""}
                                     onChange={(e) => {
                                       updateChoice(q.id, choice.id, choice.text, choice.scores, undefined, e.target.value);
                                     }}
                                     className="w-full bg-white border border-emerald-200/50 rounded-lg px-3 py-1.5 text-[10px] text-emerald-700 placeholder-emerald-300 focus:outline-none focus:border-emerald-300"
-                                    placeholder="この選択肢を選んだときの個別の解説文（任意）"
-                                  />
-                                )}
+                                    placeholder="この選択肢を選んだときの個別のメッセージ（任意）"
+                                />
                               </div>
                               <button
                                 onClick={() => removeChoice(q.id, choice.id)}
@@ -1238,7 +1236,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               </span>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {content.scoringAttributes.map((attr) => {
-                                  const scoreVal = choice.scores[attr] || 0;
+                                  const scoreVal = choice.scores[attr] ?? "";
                                   return (
                                     <div key={attr} className="bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200 flex flex-col justify-center">
                                       <div className="flex justify-between text-[10px] text-slate-600">
@@ -1284,8 +1282,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             <label className="block text-[10px] text-slate-500 mb-1">最小値</label>
                             <input
                               type="number"
-                              value={q.sliderMin}
-                              onChange={(e) => updateQuestion(q.id, { sliderMin: parseInt(e.target.value) || 0 })}
+                              value={q.sliderMin ?? ""}
+                              onChange={(e) => updateQuestion(q.id, { sliderMin: e.target.value === '' ? undefined : Number(e.target.value) })}
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none"
                             />
                           </div>
@@ -1293,8 +1291,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             <label className="block text-[10px] text-slate-500 mb-1">最大値</label>
                             <input
                               type="number"
-                              value={q.sliderMax}
-                              onChange={(e) => updateQuestion(q.id, { sliderMax: parseInt(e.target.value) || 10 })}
+                              value={q.sliderMax ?? ""}
+                              onChange={(e) => updateQuestion(q.id, { sliderMax: e.target.value === '' ? undefined : Number(e.target.value) })}
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none"
                             />
                           </div>
@@ -1302,8 +1300,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             <label className="block text-[10px] text-slate-500 mb-1">ステップ段階</label>
                             <input
                               type="number"
-                              value={q.sliderStep}
-                              onChange={(e) => updateQuestion(q.id, { sliderStep: parseInt(e.target.value) || 1 })}
+                              value={q.sliderStep ?? ""}
+                              onChange={(e) => updateQuestion(q.id, { sliderStep: e.target.value === '' ? undefined : Number(e.target.value) })}
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none"
                             />
                           </div>
@@ -1334,8 +1332,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   <label className="text-[10px] text-slate-500 font-bold">最大加点 (一番左の時)</label>
                                   <input
                                     type="number"
-                                    value={q.sliderLeftMaxScore || 0}
-                                    onChange={(e) => updateQuestion(q.id, { sliderLeftMaxScore: parseFloat(e.target.value) || 0 })}
+                                    value={q.sliderLeftMaxScore ?? ""}
+                                    onChange={(e) => updateQuestion(q.id, { sliderLeftMaxScore: e.target.value === '' ? undefined : Number(e.target.value) })}
                                     className="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-mono text-center"
                                   />
                                 </div>
@@ -1367,8 +1365,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   <label className="text-[10px] text-slate-500 font-bold">最大加点 (一番右の時)</label>
                                   <input
                                     type="number"
-                                    value={q.sliderRightMaxScore || 0}
-                                    onChange={(e) => updateQuestion(q.id, { sliderRightMaxScore: parseFloat(e.target.value) || 0 })}
+                                    value={q.sliderRightMaxScore ?? ""}
+                                    onChange={(e) => updateQuestion(q.id, { sliderRightMaxScore: e.target.value === '' ? undefined : Number(e.target.value) })}
                                     className="w-16 bg-white border border-slate-200 rounded px-2 py-1 text-xs font-mono text-center"
                                   />
                                 </div>
@@ -1384,14 +1382,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               <input
                                 type="number"
                                 value={q.sliderCorrectMin ?? q.sliderMin}
-                                onChange={(e) => updateQuestion(q.id, { sliderCorrectMin: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => updateQuestion(q.id, { sliderCorrectMin: e.target.value === '' ? undefined : Number(e.target.value) })}
                                 className="w-20 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-mono text-center"
                               />
                               <span className="text-xs text-indigo-500 font-bold">〜</span>
                               <input
                                 type="number"
                                 value={q.sliderCorrectMax ?? q.sliderMax}
-                                onChange={(e) => updateQuestion(q.id, { sliderCorrectMax: parseFloat(e.target.value) || 0 })}
+                                onChange={(e) => updateQuestion(q.id, { sliderCorrectMax: e.target.value === '' ? undefined : Number(e.target.value) })}
                                 className="w-20 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-mono text-center"
                               />
                             </div>
@@ -1449,7 +1447,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   onChange={(e) => {
                                     const nextRules = q.textRules.map(tr => {
                                       if (tr.id === rule.id) {
-                                        return { ...tr, keywords: e.target.value.split(",").map(k => k.trim()).filter(Boolean) };
+                                        return { ...tr, keywords: e.target.value.split(/[,、]/).map(k => k.trim()) };
                                       }
                                       return tr;
                                     });
@@ -1485,7 +1483,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   </span>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {content.scoringAttributes.map((attr) => {
-                                      const scoreVal = rule.scores[attr] || 0;
+                                      const scoreVal = rule.scores[attr] ?? "";
                                       return (
                                         <div key={attr} className="bg-white px-2 py-1 rounded-lg border border-slate-200 flex justify-between items-center">
                                           <span className="text-[10px] text-slate-500 font-bold">{attr}</span>
@@ -1496,7 +1494,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                               const nextRules = q.textRules.map(tr => {
                                                 if (tr.id === rule.id) {
                                                   const nextScores = { ...tr.scores };
-                                                  nextScores[attr] = parseInt(e.target.value) || 0;
+                                                  nextScores[attr] = e.target.value === '' ? undefined : Number(e.target.value);
                                                   return { ...tr, scores: nextScores };
                                                 }
                                                 return tr;
@@ -1511,8 +1509,29 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   </div>
                                 </>
                               )}
+
+                            </div>
+                            {/* 個別フィードバック（一致時にモーダル表示） */}
+                            <div className="mt-2">
+                              <label className="block text-[10px] text-slate-500 mb-0.5 font-bold">
+                                一致時の返答メッセージ（モーダルで表示されます）
+                              </label>
+                              <input
+                                type="text"
+                                value={rule.feedback || ""}
+                                onChange={(e) => {
+                                  const nextRules = q.textRules.map(tr => {
+                                    if (tr.id === rule.id) return { ...tr, feedback: e.target.value };
+                                    return tr;
+                                  });
+                                  updateQuestion(q.id, { textRules: nextRules });
+                                }}
+                                placeholder="例: 正解！ / その考え方素敵ですね！"
+                                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
+                              />
                             </div>
                           </div>
+
                         ))}
                       </div>
                     )}
@@ -1787,7 +1806,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             type="number"
                             value={item.probability}
                             onChange={(e) => {
-                              const updated = content.gachaItems.map(gi => gi.id === item.id ? { ...gi, probability: parseFloat(e.target.value) || 0 } : gi);
+                              const updated = content.gachaItems.map(gi => gi.id === item.id ? { ...gi, probability: Number(e.target.value) } : gi);
                               setContent({ ...content, gachaItems: updated });
                             }}
                             className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-center font-mono font-bold text-emerald-600 focus:outline-none"
@@ -2005,14 +2024,17 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                   <label className="block text-xs font-bold text-slate-600 mb-1">🔀 並び替え条件</label>
                                   <input
                                     type="text"
-                                    value={result.conditionOrder?.join(' > ') || ''}
+                                    value={(result as any).conditionOrderRaw ?? (result.conditionOrder?.join(' > ') || '')}
                                     onChange={(e) => {
-                                      const orderArr = e.target.value.split(/[^a-zA-Z0-9_]+/).filter(Boolean);
-                                      const updated = content.results.map(r => r.id === result.id ? { ...r, conditionOrder: orderArr } : r);
+                                      const val = e.target.value;
+                                      const orderArr = val.includes('>') || val.includes(',') || val.includes(' ') || val.includes('＞') || val.includes('、')
+                                           ? val.split(/[^a-zA-Z0-9_]+/).filter(Boolean)
+                                           : val.split(/(?!$)/u).filter(c => c.trim() !== ''); // support multi-byte chars correctly
+                                      const updated = content.results.map(r => r.id === result.id ? { ...r, conditionOrderRaw: val, conditionOrder: orderArr } : r);
                                       setContent({ ...content, results: updated });
                                     }}
                                     className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-sky-400"
-                                    placeholder="例: L > V > F > E"
+                                    placeholder="例: LVFE または L > V > F > E"
                                   />
                                   <p className="text-[10px] text-slate-500 mt-1 leading-tight">
                                     タイトルや説明文に <code className="bg-slate-100 text-pink-500 px-1 rounded">{"{SORT}"}</code> と入れると、判定された実際の並び替え結果が自動で挿入されます！<br/>
@@ -2051,7 +2073,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                       type="number"
                                       value={result.conditionScoreMin}
                                       onChange={(e) => {
-                                        const updated = content.results.map(r => r.id === result.id ? { ...r, conditionScoreMin: parseInt(e.target.value) || 0 } : r);
+                                        const updated = content.results.map(r => r.id === result.id ? { ...r, conditionScoreMin: e.target.value === '' ? undefined : Number(e.target.value) } : r);
                                         setContent({ ...content, results: updated });
                                       }}
                                       className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 text-center focus:outline-none"
