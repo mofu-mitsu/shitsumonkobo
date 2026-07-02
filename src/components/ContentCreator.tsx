@@ -1009,6 +1009,17 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                 content.questions.map((q, idx) => (
                   <div key={q.id} className="bg-white border border-slate-200 p-5 rounded-2xl space-y-4 shadow-sm animate-fade-in relative">
                     <div className="absolute top-4 right-4 flex items-center gap-2">
+                      {content.type === 'quiz' && (
+                        <label className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                          🎯 配点:
+                          <input
+                            type="number"
+                            value={q.scoreWeight ?? 1}
+                            onChange={(e) => updateQuestion(q.id, { scoreWeight: e.target.value === '' ? undefined : Number(e.target.value) })}
+                            className="w-10 text-center bg-transparent focus:outline-none text-slate-700"
+                          />
+                        </label>
+                      )}
                       <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
                         {q.type === 'five_choices' ? '5択リカート' :
                          q.type === 'radio' ? '単一選択' :
@@ -1381,14 +1392,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
-                                value={q.sliderCorrectMin ?? q.sliderMin}
+                                value={q.sliderCorrectMin !== undefined ? q.sliderCorrectMin : ""}
                                 onChange={(e) => updateQuestion(q.id, { sliderCorrectMin: e.target.value === '' ? undefined : Number(e.target.value) })}
                                 className="w-20 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-mono text-center"
                               />
                               <span className="text-xs text-indigo-500 font-bold">〜</span>
                               <input
                                 type="number"
-                                value={q.sliderCorrectMax ?? q.sliderMax}
+                                value={q.sliderCorrectMax !== undefined ? q.sliderCorrectMax : ""}
                                 onChange={(e) => updateQuestion(q.id, { sliderCorrectMax: e.target.value === '' ? undefined : Number(e.target.value) })}
                                 className="w-20 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-mono text-center"
                               />
@@ -2032,6 +2043,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                            : val.split(/(?!$)/u).filter(c => c.trim() !== ''); // support multi-byte chars correctly
                                       const updated = content.results.map(r => r.id === result.id ? { ...r, conditionOrderRaw: val, conditionOrder: orderArr } : r);
                                       setContent({ ...content, results: updated });
+                                    }}
+                                    onBlur={(e) => {
+                                      // フォーカスが外れたら、自動的に A > B > C 形式にフォーマットする
+                                      if (result.conditionOrder && result.conditionOrder.length > 0) {
+                                        const formatted = result.conditionOrder.join(' > ');
+                                        const updated = content.results.map(r => r.id === result.id ? { ...r, conditionOrderRaw: formatted } : r);
+                                        setContent({ ...content, results: updated });
+                                      }
                                     }}
                                     className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-sky-400"
                                     placeholder="例: LVFE または L > V > F > E"
