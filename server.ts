@@ -650,23 +650,35 @@ async function start() {
     if (req.headers.accept?.includes("text/html")) {
       const sharedId = req.query.id as string;
       let title = "しつもん工房";
-      let desc = "あなたの個性がカタチになる！しつもん工房";
-      let img = `https://${req.get('host')}/ogp.jpg`;
+      let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
+      let img = `https://shitsumonkobo.vercel.app/ogp.jpg`;
 
       if (sharedId) {
-        const db = loadDB();
-        const content = db.find((c: any) => c.id === sharedId);
-        if (content) {
-          title = `${content.title} - しつもん工房`;
-          desc = content.description || desc;
-          if (content.results && content.results.length > 0 && content.results[0].imageUrl) {
-            const resultImg = content.results[0].imageUrl;
-            if (resultImg.startsWith("http")) {
-              img = resultImg;
-            } else if (resultImg.startsWith("/")) {
-              img = `https://${req.get('host')}${resultImg}`;
+        try {
+          const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/databases/(default)/documents/contents/${sharedId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.fields) {
+              const contentTitle = data.fields.title?.stringValue || "無題";
+              title = `${contentTitle} - しつもん工房`;
+              desc = data.fields.description?.stringValue || desc;
+              
+              const resultsArray = data.fields.results?.arrayValue?.values;
+              if (resultsArray && resultsArray.length > 0) {
+                const firstResult = resultsArray[0].mapValue?.fields;
+                if (firstResult && firstResult.imageUrl?.stringValue) {
+                  const resultImg = firstResult.imageUrl.stringValue;
+                  if (resultImg.startsWith("http")) {
+                    img = resultImg;
+                  } else if (resultImg.startsWith("/")) {
+                    img = `https://shitsumonkobo.vercel.app${resultImg}`;
+                  }
+                }
+              }
             }
           }
+        } catch (e) {
+          console.error("Failed to fetch OGP data from Firestore", e);
         }
       }
 
@@ -682,7 +694,7 @@ async function start() {
         <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
         <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
         <meta property="og:image" content="${img}" />
-        <meta property="og:url" content="https://${req.get('host')}${req.originalUrl}" />
+        <meta property="og:url" content="https://shitsumonkobo.vercel.app/?id=${sharedId || ''}" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
