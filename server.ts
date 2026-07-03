@@ -651,7 +651,10 @@ async function start() {
       const sharedId = req.query.id as string;
       let title = "しつもん工房";
       let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
-      let img = `https://shitsumonkobo.vercel.app/ogp.jpg`;
+      const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      const host = req.get('host') || 'shitsumonkobo.vercel.app';
+      const baseUrl = `${protocol}://${host}`;
+      let img = `${baseUrl}/ogp.jpg`;
 
       if (sharedId) {
         try {
@@ -674,15 +677,15 @@ async function start() {
               }
               
               if (coverImg && coverImg.startsWith("data:image")) {
-                img = `https://shitsumonkobo.vercel.app/api/ogp-image?id=${sharedId}`;
+                img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
               } else if (coverImg && coverImg.startsWith("http")) {
                 img = coverImg;
               } else if (firstResultImg.startsWith("data:image")) {
-                img = `https://shitsumonkobo.vercel.app/api/ogp-image?id=${sharedId}`;
+                img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
               } else if (firstResultImg.startsWith("http")) {
                 img = firstResultImg;
               } else if (firstResultImg.startsWith("/")) {
-                img = `https://shitsumonkobo.vercel.app${firstResultImg}`;
+                img = `${baseUrl}${firstResultImg}`;
               }
             }
           }
@@ -703,7 +706,7 @@ async function start() {
         <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
         <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
         <meta property="og:image" content="${img}" />
-        <meta property="og:url" content="https://shitsumonkobo.vercel.app/?id=${sharedId || ''}" />
+        <meta property="og:url" content="${baseUrl}/?id=${sharedId || ''}" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
@@ -711,7 +714,7 @@ async function start() {
         <meta name="twitter:image" content="${img}" />
       `;
       
-      const html = template.replace('</head>', `${ogpTags}\n</head>`);
+      const html = template.replace('<!-- OGP_PLACEHOLDER -->', ogpTags);
       res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       return;
     }

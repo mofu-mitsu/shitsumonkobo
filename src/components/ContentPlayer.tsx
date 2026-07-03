@@ -1146,7 +1146,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                               <div className="space-y-2">
                                 {q.choices?.map(c => {
                                   const count = counts[c.id] || 0;
-                                  const pct = Math.round((count / totalAnswers) * 100);
+                                  const pct = Math.round((count / totalAnswers) * 100) || 0;
                                   return (
                                     <div key={c.id} className="space-y-1">
                                       <div className="flex justify-between text-[10px] text-slate-500">
@@ -1167,7 +1167,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                                       listClassName="flex flex-wrap gap-1"
                                       renderItem={(l, lIdx) => (
                                         <span key={lIdx} className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-mono">
-                                          {l.answers[q.id]}
+                                          {typeof l.answers[q.id] === 'object' ? JSON.stringify(l.answers[q.id]) : l.answers[q.id]}
                                         </span>
                                       )}
                                     />
@@ -1181,7 +1181,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                                       listClassName="space-y-1"
                                       renderItem={(l, lIdx) => (
                                         <div key={lIdx} className="bg-slate-50 text-slate-700 px-2 py-1 rounded text-[10px] border border-slate-100 break-words">
-                                          {l.answers[q.id]}
+                                          {typeof l.answers[q.id] === 'object' ? JSON.stringify(l.answers[q.id]) : l.answers[q.id]}
                                         </div>
                                       )}
                                     />
@@ -1195,7 +1195,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                                       listClassName="flex flex-wrap gap-1"
                                       renderItem={(l, lIdx) => (
                                         <span key={lIdx} className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-mono border border-emerald-100">
-                                          {l.answers[q.id]}%
+                                          {typeof l.answers[q.id] === 'object' ? JSON.stringify(l.answers[q.id]) : l.answers[q.id]}%
                                         </span>
                                       )}
                                     />

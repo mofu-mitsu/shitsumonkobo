@@ -1106,7 +1106,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       <textarea
                         value={q.text}
                         onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 pr-28 text-sm text-slate-800 font-bold flex-1 placeholder-slate-400 focus:outline-none min-h-[60px] resize-y"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 font-bold flex-1 placeholder-slate-400 focus:outline-none min-h-[60px] resize-y"
                         placeholder="質問の質問文を入力してね\n（改行も可能です）"
                         rows={2}
                       />

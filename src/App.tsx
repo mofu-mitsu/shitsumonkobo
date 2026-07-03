@@ -115,7 +115,13 @@ export default function App() {
   const [publicContents, setPublicContents] = useState<ShitsumonKobo_Content[]>([]);
   const [publicSort, setPublicSort] = useState<"newest" | "popular">("newest");
   const [myContents, setMyContents] = useState<ShitsumonKobo_Content[]>([]);
-  const [playHistory, setPlayHistory] = useState<ShitsumonKobo_Content[]>([]);
+  const [playHistory, setPlayHistory] = useState<ShitsumonKobo_Content[]>(() => {
+    try {
+      const historyRaw = localStorage.getItem("shitsumonkobo_history");
+      if (historyRaw) return JSON.parse(historyRaw);
+    } catch (e) {}
+    return [];
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCategory, setSearchCategory] = useState<'all' | 'diagnostic' | 'quiz' | 'survey' | 'gacha'>('all');
   const [visibleCount, setVisibleCount] = useState(9);
@@ -203,6 +209,7 @@ export default function App() {
       const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id)).map(s => ({...s, isDefault: true}));
       list = [...list, ...missingSamples];
       setPublicContents(list);
+      try { localStorage.setItem("shitsumonkobo_public_cache", JSON.stringify(list)); } catch (e) {}
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
       setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
