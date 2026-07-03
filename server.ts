@@ -721,7 +721,7 @@ async function start() {
         <meta name="twitter:image" content="${img}" />
       `;
       
-      const html = template.replace('<!-- OGP_PLACEHOLDER -->', ogpTags);
+      const html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);
       res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
       return;
     }

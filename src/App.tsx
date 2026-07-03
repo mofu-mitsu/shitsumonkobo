@@ -275,7 +275,8 @@ export default function App() {
     } catch(e) {}
     
     // Simulate loading for the stylish entrance
-    setIsInitializing(false);
+    const timer = setTimeout(() => setIsInitializing(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期
@@ -796,8 +797,8 @@ export default function App() {
                         .sort((a, b) => {
                           if (sortOrder === 'popular') {
                             // Mock popular sort: sort by result count descending, or by string length of ID
-                            const scoreA = (a.results?.length || 0) * 10 + a.questions.length;
-                            const scoreB = (b.results?.length || 0) * 10 + b.questions.length;
+                            const scoreA = (a.results?.length || 0) * 10 + (a.questions?.length || 0);
+                            const scoreB = (b.results?.length || 0) * 10 + (b.questions?.length || 0);
                             return scoreB - scoreA;
                           }
                           return sortOrder === 'newest' 

@@ -1,21 +1,7 @@
-<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GNTX973GET"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-GNTX973GET');
-    </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>しつもん工房 | ノーコードで診断・心理テスト・クイズ・アンケート・ガチャが作れる</title>
-    <meta name="description" content="「しつもん工房」は誰でも簡単にオリジナルの診断、クイズ、アンケートを作成して遊べるプラットフォームです。あなたの個性をカタチにして、友達とシェアしよう！" />
-    <meta name="keywords" content="診断メーカー, クイズ作成, アンケート作成, しつもん工房, ジェネレーター" />
-    
+const fs = require('fs');
+let code = fs.readFileSync('index.html', 'utf-8');
+
+const defaultOgp = `
     <!-- Default OGP Tags (Used if server.ts is not running, e.g. static Vercel) -->
     <meta property="og:title" content="しつもん工房 | ノーコードで診断・心理テスト・クイズ・アンケート・ガチャが作れる" />
     <meta property="og:description" content="「しつもん工房」は誰でも簡単にオリジナルの診断、クイズ、アンケートを作成して遊べるプラットフォームです。あなたの個性をカタチにして、友達とシェアしよう！" />
@@ -27,10 +13,9 @@
     <meta name="twitter:description" content="「しつもん工房」は誰でも簡単にオリジナルの診断、クイズ、アンケートを作成して遊べるプラットフォームです。" />
     <meta name="twitter:image" content="https://shitsumonkobo.vercel.app/ogp.jpg" />
     <!-- OGP_PLACEHOLDER -->
+`;
 
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+code = code.replace(/<!-- OGP_PLACEHOLDER -->/, defaultOgp);
+
+fs.writeFileSync('index.html', code);
+console.log("Patched index.html with static OGP");
