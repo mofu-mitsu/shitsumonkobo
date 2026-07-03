@@ -2403,8 +2403,25 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-400 transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1">開いた時に加算される属性ポイント (例: Score 10 Se 5)</label>
+                  
+                  <div className="mt-2">
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">最大登場回数（空欄で無限）</label>
+                    <input
+                      type="number"
+                      value={content.gimmicks.secretLetterMaxAppearances ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value === "" ? undefined : parseInt(e.target.value);
+                        setContent(prev => ({
+                          ...prev,
+                          gimmicks: { ...prev.gimmicks, secretLetterMaxAppearances: val }
+                        }));
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs"
+                      placeholder="無限"
+                    />
+                  </div>
+
+                  <div><label className="block text-[10px] font-bold text-slate-500 mb-1">開いた時に加算される属性ポイント (例: Score 10 Se 5)</label>
                     <AttributeMultiplierEditor value={content.gimmicks.secretLetterAttributeMultiplier} onChange={(parsed) => setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, secretLetterAttributeMultiplier: parsed } }))} availableAttributes={content.scoringAttributes} />
                   </div>
                 </div>

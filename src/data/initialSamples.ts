@@ -175,7 +175,7 @@ export const initialSamples: ShitsumonKobo_Content[] = [
   },
   {
     id: "sample_gacha_bug",
-    title: "LSI芋虫(🐛)の虫たたき＆ガチャ工房",
+    title: "🐛の虫たたき＆ガチャ工房",
     description: "画面をタップすると『ピコピコシンセ音』が鳴り響く！そして、好きな時に10連ガチャを引いて色んな愉快な芋虫たちを収集できるファンタジーなガチャ＆たたきゲームプラットフォーム！",
     type: "gacha",
     creatorName: "デフォルト",

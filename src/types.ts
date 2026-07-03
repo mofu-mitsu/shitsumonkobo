@@ -132,12 +132,14 @@ export interface ShitsumonKobo_GimmickConfig {
   enableRandomEvent?: boolean; // ランダムイベント（猫が現れるなど）
   randomEventEmojiOrImage?: string; 
   randomEventText?: string;
+  randomEventMaxAppearances?: number; // ランダムイベントの登場回数上限
   
   secretNpcEvent?: { questionIndex: number; npcCameoText: string; npcEmoji: string }[]; // Q数経過で乱入するNPC
   
   secretMessage?: string; // 最後に手紙が届くギミック
   enableSecretLetter?: boolean; // 手紙ギミック
   secretLetterText?: string;
+  secretLetterMaxAppearances?: number; // 手紙の登場回数上限
   secretLetterAttributeMultiplier?: Record<string, number>; // 手紙を開いたときに加算されるポイント
 
   caterpillarQuotes: string[];  // 芋虫がタップされたときに吐き出すセリフ

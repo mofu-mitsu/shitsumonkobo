@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { playSound } from "./SoundEngine";
 
 interface LsiCaterpillarProps {
+  name?: string;
   quotes?: string[];
   squishQuote?: string;
   squishTarget?: number;
@@ -17,6 +18,7 @@ export default function LsiCaterpillar({
   squishQuote = "💥 ぎゃーーー！潰されたァーー！！！",
   squishTarget = 30,
   mascot = "🐛",
+  name = "LSI芋虫",
   onSquish,
   onTap,
   maxAppearances
@@ -88,7 +90,7 @@ export default function LsiCaterpillar({
         className="absolute bottom-0 transition-all duration-100 ease-linear pointer-events-auto cursor-pointer flex flex-col items-center"
         style={{ left: `${posX}%` }}
         onClick={handleTap}
-        title="LSI芋虫🐛をタップしてみてね！"
+        title={`\${name}${mascot.startsWith('http') ? '' : mascot}をタップしてみてね！`}
       >
         {/* 吹き出し */}
         <AnimatePresence>

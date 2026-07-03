@@ -275,8 +275,7 @@ export default function App() {
     } catch(e) {}
     
     // Simulate loading for the stylish entrance
-    const timer = setTimeout(() => setIsInitializing(false), 1200);
-    return () => clearTimeout(timer);
+    setIsInitializing(false);
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期

@@ -647,11 +647,18 @@ async function start() {
       return next();
     }
     
-    if (req.headers.accept?.includes("text/html")) {
+    
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const ext = path.extname(parsedUrl.pathname);
+    const isPageRequest = !ext || ext === '.html';
+
+    if (isPageRequest) {
+
       const sharedId = req.query.id as string;
       let title = "しつもん工房";
       let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
-      const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      const forwardedProto = req.headers['x-forwarded-proto'] || '';
+      const protocol = req.protocol === 'https' || forwardedProto.includes('https') ? 'https' : 'http';
       const host = req.get('host') || 'shitsumonkobo.vercel.app';
       const baseUrl = `${protocol}://${host}`;
       let img = `${baseUrl}/ogp.jpg`;

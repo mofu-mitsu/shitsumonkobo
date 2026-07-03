@@ -4,7 +4,7 @@ import { playSound } from "./SoundEngine";
 
 interface PairingGameProps {
   items: ShitsumonKobo_PairItem[];
-  onComplete: (score: number) => void;
+  onComplete: (score: number, connections?: Record<string, string>) => void;
   readOnly?: boolean;
 }
 
@@ -175,7 +175,7 @@ export default function PairingGame({ items, onComplete, readOnly = false }: Pai
       });
       // 1ペアにつき25pt (満点100pt目安)
       const finalScore = Math.round((correctCount / items.length) * 100);
-      onComplete(finalScore);
+      onComplete(finalScore, updatedConns);
     }
   };
 

@@ -70,10 +70,13 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   const [checkboxAnswers, setCheckboxAnswers] = useState<Record<string, Record<string, boolean>>>({});
   const [sliderAnswers, setSliderAnswers] = useState<Record<string, number>>({});
   const [pairingScores, setPairingScores] = useState<Record<string, number>>({});
+  const [pairingConnections, setPairingConnections] = useState<Record<string, Record<string, string>>>({});
   const [beatTapsScore, setBeatTapsScore] = useState(0);
   const [gimmickScores, setGimmickScores] = useState<Record<string, number>>({});
   const [showSecretLetter, setShowSecretLetter] = useState(false);
   const [secretLetterOpened, setSecretLetterOpened] = useState(false);
+  const [secretLetterCount, setSecretLetterCount] = useState(0);
+  const [randomEventCount, setRandomEventCount] = useState(0);
 
   // ガチャ状態
   const [gachaHistory, setGachaHistory] = useState<{ item: ShitsumonKobo_GachaItem; id: string }[]>([]);
@@ -329,7 +332,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   };
 
   // 線つなぎペア引き時スコア
-  const handlePairingGameComplete = (quizScore: number) => {
+  const handlePairingGameComplete = (quizScore: number, conns?: Record<string, string>) => {
+    if (conns) setPairingConnections(prev => ({ ...prev, [currentQ.id]: conns }));
     setPairingScores(prev => ({ ...prev, [currentQ.id]: quizScore }));
     playSound("bell");
   };
@@ -486,11 +490,18 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     setHistoryStack(prev => [...prev, currentIdx]);
 
     // ランダム遭遇 (約15%の確率で発生)
-    if (content.gimmicks?.enableSecretLetter && !secretLetterOpened && Math.random() < 0.20 && currentIdx > 0 && currentIdx < playQuestions.length - 1) {
+    const slMax = content.gimmicks?.secretLetterMaxAppearances;
+    const reMax = content.gimmicks?.randomEventMaxAppearances;
+    const canShowSL = content.gimmicks?.enableSecretLetter && (slMax === undefined || secretLetterCount < slMax) && currentIdx > 0 && currentIdx < playQuestions.length - 1;
+    const canShowRE = content.gimmicks?.enableRandomEvent && (reMax === undefined || randomEventCount < reMax) && currentIdx < playQuestions.length - 1;
+
+    if (canShowSL && Math.random() < 0.20) {
       setShowSecretLetter(true);
+      setSecretLetterCount(c => c + 1);
       playSound("synth");
-    } else if (content.gimmicks?.enableRandomEvent && Math.random() < 0.15 && currentIdx < playQuestions.length - 1) {
+    } else if (canShowRE && Math.random() < 0.15) {
       setShowEncounter(true);
+      setRandomEventCount(c => c + 1);
       playSound("bell");
       setTimeout(() => setShowEncounter(false), 3000);
     }
@@ -829,7 +840,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               if (textAnswers[q.id] !== undefined) visibleAnswers[q.id] = textAnswers[q.id];
               if (checkboxAnswers[q.id] !== undefined) visibleAnswers[q.id] = checkboxAnswers[q.id];
               if (sliderAnswers[q.id] !== undefined) visibleAnswers[q.id] = sliderAnswers[q.id];
-              if (pairingScores[q.id] !== undefined) visibleAnswers[q.id] = pairingScores[q.id];
+              if (pairingScores[q.id] !== undefined) visibleAnswers[q.id] = { score: pairingScores[q.id], connections: pairingConnections[q.id] };
             }
           });
 
@@ -993,7 +1004,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           quotes={content.gimmicks.caterpillarQuotes} 
           squishQuote={content.gimmicks.caterpillarSquishQuote}
           squishTarget={content.gimmicks.caterpillarSquishTarget} 
-          mascot={content.gimmicks.lsiMascotImageOrEmoji || "🐛"} 
+          mascot={content.gimmicks.lsiMascotImageOrEmoji || "🐛"}
+          name={content.gimmicks.caterpillarName} 
           maxAppearances={content.gimmicks.caterpillarMaxAppearances}
           onTap={() => {
             if (content.gimmicks.caterpillarAttributeMultiplier) {
@@ -1195,7 +1207,23 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                                       listClassName="flex flex-wrap gap-1"
                                       renderItem={(l, lIdx) => (
                                         <span key={lIdx} className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-mono border border-emerald-100">
-                                          {typeof l.answers[q.id] === 'object' ? JSON.stringify(l.answers[q.id]) : l.answers[q.id]}%
+                                          
+                                        {(() => {
+                                          const ansObj = l.answers[q.id];
+                                          if (typeof ansObj === 'object' && ansObj !== null && ansObj.score !== undefined) {
+                                            const conns = ansObj.connections || {};
+                                            const details = Object.entries(conns).map(([lId, rId]) => {
+                                              const leftItem = q.pairItems?.find(p => p.id === lId);
+                                              const rightItem = q.pairItems?.find(p => p.id === rId);
+                                              const lText = leftItem ? (leftItem.leftLabel || leftItem.leftEmojiOrUrl) : "?";
+                                              const rText = rightItem ? (rightItem.rightLabel || rightItem.rightEmojiOrUrl) : "?";
+                                              return `${lText} ↔ ${rText}`;
+                                            }).join(", ");
+                                            return <span className="flex flex-col gap-0.5"><span>スコア: {ansObj.score}%</span><span className="text-[9px] text-slate-500 opacity-80">{details}</span></span>;
+                                          }
+                                          return `${ansObj}%`;
+                                        })()}
+
                                         </span>
                                       )}
                                     />
