@@ -37,8 +37,9 @@ const getAutoSeasonColor = () => {
 
 export default function App() {
   const handleLoginClick = async () => {
-    const isLine = navigator.userAgent.includes("Line");
-    const isTwitter = navigator.userAgent.includes("Twitter") || navigator.userAgent.includes("FBAV") || navigator.userAgent.includes("Instagram");
+    const ua = navigator.userAgent.toLowerCase();
+    const isLine = ua.includes("line");
+    const isTwitter = ua.includes("twitter") || ua.includes("fbav") || ua.includes("instagram");
     const isInAppBrowser = isLine || isTwitter;
 
     if (isInAppBrowser) {
@@ -528,18 +529,7 @@ export default function App() {
                   </div>
                 ) : (
                   <button 
-                    onClick={async () => {
-                      try {
-                        await loginWithGoogle();
-                      } catch (err: any) {
-                        if (err?.code === 'auth/operation-not-allowed') {
-                          showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
-                        } else {
-                          console.log("Login popup closed or failed:", err);
-                          showAlert('ログインエラー', `ログイン処理中にエラーが発生しました。\n${err?.message || ''}`, 'error');
-                        }
-                      }
-                    }}
+                    onClick={handleLoginClick}
                     className="bg-sky-500 hover:bg-sky-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                   >
                     Googleでログイン
@@ -670,19 +660,7 @@ export default function App() {
                 </div>
               ) : (
                 <button 
-                  onClick={async () => {
-                    try {
-                      await loginWithGoogle();
-                      setIsMobileMenuOpen(false);
-                    } catch (err: any) {
-                      if (err?.code === 'auth/operation-not-allowed') {
-                        showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
-                      } else {
-                        console.log("Login popup closed or failed:", err);
-                        showAlert('ログインエラー', `ログイン処理中にエラーが発生しました。\n${err?.message || ''}`, 'error');
-                      }
-                    }
-                  }}
+                  onClick={handleLoginClick}
                   className="bg-slate-800 hover:bg-slate-700 w-full text-white text-[10px] font-bold px-3 py-3 rounded-xl flex justify-center items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                 >
                   <Globe size={14} /> Googleでログイン
@@ -843,16 +821,30 @@ export default function App() {
                               </span>
                             </div>
 
-                            {(item.coverImageUrl || item.results?.[0]?.imageUrl) && (
-                              <div className="w-full h-32 mb-3 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                                <img src={item.coverImageUrl || item.results?.[0]?.imageUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
-                              </div>
-                            )}\n<div className="space-y-1">
+                            
+                            {(() => {
+                              const imgUrl = item.coverImageUrl || item.results?.[0]?.imageUrl;
+                              const isEmoji = imgUrl && !imgUrl.startsWith("http") && !imgUrl.startsWith("data:");
+                              return (
+                                <div className="w-full h-32 mb-3 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 border border-slate-100">
+                                  {imgUrl ? (
+                                    isEmoji ? (
+                                      <span className="text-6xl transition-transform group-hover:scale-110 duration-300">{imgUrl}</span>
+                                    ) : (
+                                      <img src={imgUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+                                    )
+                                  ) : (
+                                    <Palette className="w-12 h-12 text-slate-200" />
+                                  )}
+                                </div>
+                              );
+                            })()}
+<div className="space-y-1">
                               <h4 className="text-md font-bold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-1 leading-snug">
-                                {item.title}
+                                {item.title.replace(/\\n|¥n/g, ' ')}
                               </h4>
                               <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                {item.description || "（説明文はありません）"}
+                                {item.description ? item.description.replace(/\\n|¥n/g, ' ') : '（説明文はありません）'}
                               </p>
                             </div>
                           </div>
@@ -945,16 +937,30 @@ export default function App() {
                               </span>
                             </div>
 
-                            {(item.coverImageUrl || item.results?.[0]?.imageUrl) && (
-                              <div className="w-full h-32 mb-3 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                                <img src={item.coverImageUrl || item.results?.[0]?.imageUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
-                              </div>
-                            )}\n<div className="space-y-1">
+                            
+                            {(() => {
+                              const imgUrl = item.coverImageUrl || item.results?.[0]?.imageUrl;
+                              const isEmoji = imgUrl && !imgUrl.startsWith("http") && !imgUrl.startsWith("data:");
+                              return (
+                                <div className="w-full h-32 mb-3 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 border border-slate-100">
+                                  {imgUrl ? (
+                                    isEmoji ? (
+                                      <span className="text-6xl transition-transform group-hover:scale-110 duration-300">{imgUrl}</span>
+                                    ) : (
+                                      <img src={imgUrl} alt="cover" className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
+                                    )
+                                  ) : (
+                                    <Palette className="w-12 h-12 text-slate-200" />
+                                  )}
+                                </div>
+                              );
+                            })()}
+<div className="space-y-1">
                               <h4 className="text-md font-bold text-slate-800 group-hover:text-sky-600 transition-colors">
-                                {item.title}
+                                {item.title.replace(/\\n|¥n/g, ' ')}
                               </h4>
                               <p className="text-xs text-slate-500 line-clamp-2">
-                                {item.description || "（説明文はありません）"}
+                                {item.description ? item.description.replace(/\\n|¥n/g, ' ') : '（説明文はありません）'}
                               </p>
                             </div>
                           </div>
@@ -1036,7 +1042,7 @@ export default function App() {
                         <div className="space-y-1 mb-4">
                           <span className="font-mono text-[10px] text-slate-400">ID: {item.id.slice(0, 6)}</span>
                           <h4 className="font-bold text-slate-800 text-sm line-clamp-2 leading-tight group-hover:text-sky-600 transition-colors">
-                            {item.title}
+                            {item.title.replace(/\\n|¥n/g, ' ')}
                           </h4>
                         </div>
                         <div className="flex justify-between items-center border-t border-slate-50 pt-2">
@@ -1131,7 +1137,7 @@ export default function App() {
                   「新しいしつもんを作る」ボタンから、自分だけのオリジナル診断やクイズを無料で作成できます。
                 </p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li><strong>AIにおまかせ:</strong> 「AIで自動生成」を使えば、キーワードを入れるだけで質問や結果を自動で作ってくれます。</li>
+        
                   <li><strong>ノーコード編集:</strong> スライダーや選択肢、判定式など細かい部分も直感的にカスタマイズできます。</li>
                   <li><strong>多彩なギミック:</strong> 隠しNPC、たたきゲーム、手紙、ガチャ機能など、面白い仕掛けを自由に追加！</li>
                 </ul>

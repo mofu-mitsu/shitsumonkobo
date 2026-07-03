@@ -14,7 +14,7 @@ import { playSound } from "./SoundEngine";
 import { AnimatePresence, motion } from "motion/react";
 import ContentPlayer from "./ContentPlayer";
 import { User } from "firebase/auth";
-import { Settings, Save, Play, Share2, Plus, Download, Upload, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, Ticket, Milestone, Sparkles, Layers, ListTodo, Sliders, X } from 'lucide-react';
+import { Settings, Save, ChevronUp, ChevronDown, Play, Share2, Plus, Download, Upload, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, Ticket, Milestone, Sparkles, Layers, ListTodo, Sliders, X } from 'lucide-react';
 
 
 
@@ -1079,14 +1079,36 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       </button>
                     </div>
 
-                    <div className="flex gap-2 items-center">
-                      <span className="font-mono text-xs text-indigo-500 font-bold">Q{idx + 1}.</span>
-                      <input
-                        type="text"
+                    <div className="flex gap-2 items-start mt-4">
+                      <div className="flex flex-col items-center gap-1">
+                         <span className="font-mono text-xs text-indigo-500 font-bold mt-1">Q{idx + 1}.</span>
+                         <div className="flex flex-col gap-0.5">
+                            <button onClick={() => {
+                               if (idx > 0) {
+                                  const newQuestions = [...content.questions];
+                                  const temp = newQuestions[idx - 1];
+                                  newQuestions[idx - 1] = newQuestions[idx];
+                                  newQuestions[idx] = temp;
+                                  setContent({ ...content, questions: newQuestions });
+                               }
+                            }} className="p-0.5 text-slate-300 hover:text-sky-500 disabled:opacity-30"><ChevronUp size={14}/></button>
+                            <button onClick={() => {
+                               if (idx < content.questions.length - 1) {
+                                  const newQuestions = [...content.questions];
+                                  const temp = newQuestions[idx + 1];
+                                  newQuestions[idx + 1] = newQuestions[idx];
+                                  newQuestions[idx] = temp;
+                                  setContent({ ...content, questions: newQuestions });
+                               }
+                            }} className="p-0.5 text-slate-300 hover:text-sky-500 disabled:opacity-30"><ChevronDown size={14}/></button>
+                         </div>
+                      </div>
+                      <textarea
                         value={q.text}
                         onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
-                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-1.5 text-xs text-slate-800 font-bold flex-1 placeholder-slate-400 focus:outline-none"
-                        placeholder="質問の質問文を入力してね"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 pr-28 text-sm text-slate-800 font-bold flex-1 placeholder-slate-400 focus:outline-none min-h-[60px] resize-y"
+                        placeholder="質問の質問文を入力してね\n（改行も可能です）"
+                        rows={2}
                       />
                     </div>
 
@@ -1592,19 +1614,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                             <label className="block text-[10px] text-slate-500 font-bold mb-1">
                               💯 満点（全問正解）だった場合の加点・属性 (例: A 10 B 5)
                             </label>
-                            <input
-                              type="text"
-                              value={stringifySimpleAttributes(q.pairingAttributeScores)}
-                              onChange={(e) => {
-                                try {
-                                  const parsed = e.target.value ? parseSimpleAttributes(e.target.value) : undefined;
-                                  const updatedQs = content.questions.map(qu => qu.id === q.id ? { ...qu, pairingAttributeScores: parsed } : qu);
-                                  setContent({ ...content, questions: updatedQs });
-                                } catch(e) {}
-                              }}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none"
-                              placeholder="例: Score 10 Ni 5"
-                            />
+                            <AttributeMultiplierEditor value={q.pairingAttributeScores} onChange={(parsed) => { const updatedQs = content.questions.map(qu => qu.id === q.id ? { ...qu, pairingAttributeScores: parsed } : qu); setContent({ ...content, questions: updatedQs }); }} availableAttributes={content.scoringAttributes} />
                             <p className="text-[9px] text-slate-400 mt-1">※正解ペア数に応じて、ここに入力した加点が割合で配分されます。</p>
                           </div>
                         )}
@@ -2138,11 +2148,33 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                               )}
 
                               {(result.conditionType === 'expression' || result.conditionType === 'max_expression') && !result.isFallback && (
-                                <div>
-                                  <label className="block text-[10px] font-bold text-indigo-600 mb-1">
-                                    ⚙️ 【上級】高度な条件式
-                                  </label>
-                                  <input
+                                <div className="space-y-3">
+                                  {result.conditionType === 'max_expression' && (
+                                    <div>
+                                      <label className="block text-xs font-bold text-slate-600 mb-1">一番高くなってほしい属性を選ぶ</label>
+                                      <select
+                                        value={content.scoringAttributes.includes(result.advancedCondition || "") ? result.advancedCondition : ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          const updated = content.results.map(r => r.id === result.id ? { ...r, advancedCondition: val } : r);
+                                          setContent({ ...content, results: updated });
+                                        }}
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700"
+                                      >
+                                        <option value="">カスタム式を入力する...</option>
+                                        {content.scoringAttributes.map(attr => (
+                                          <option key={attr} value={attr}>{attr} が一番高い時</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                  
+                                  {(!content.scoringAttributes.includes(result.advancedCondition || "") || result.conditionType === 'expression') && (
+                                    <div>
+                                      <label className="block text-[10px] font-bold text-indigo-600 mb-1">
+                                        ⚙️ 【上級】高度な条件式 (カスタム)
+                                      </label>
+                                      <input
                                     type="text"
                                     value={result.advancedCondition || ""}
                                     onChange={(e) => {
@@ -2164,6 +2196,8 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                     ) : null}
                                     <button onClick={() => setContent({ ...content, results: content.results.map(r => r.id === result.id ? { ...r, advancedCondition: "" } : r)})} className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded text-[9px] font-mono border border-rose-100 ml-auto transition-colors">クリア</button>
                                   </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2253,21 +2287,26 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                         className="bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 w-20 text-center font-mono focus:outline-none"
                       />
                   </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">最大登場回数（空欄で無限）</label>
+                      <input
+                        type="number"
+                        value={content.gimmicks.caterpillarMaxAppearances ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? undefined : parseInt(e.target.value);
+                          setContent(prev => ({
+                            ...prev,
+                            gimmicks: { ...prev.gimmicks, caterpillarMaxAppearances: val }
+                          }));
+                        }}
+                        placeholder="無限"
+                        className="bg-white border border-slate-200 rounded px-2.5 py-1 text-xs text-slate-800 w-20 text-center font-mono focus:outline-none"
+                      />
+                  </div>
 
                   <div>
                     <label className="block text-[10px] text-slate-500 font-bold mb-1">🎯 潰した時に加算される属性・ポイント数 (例: Score 10 Se 5)</label>
-                    <input
-                      type="text"
-                      placeholder="例: Score 10 Ni 5"
-                      value={stringifySimpleAttributes(content.gimmicks.caterpillarAttributeMultiplier)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = e.target.value ? parseSimpleAttributes(e.target.value) : undefined;
-                          setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, caterpillarAttributeMultiplier: parsed } }));
-                        } catch(e) {}
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 mb-3 focus:outline-none"
-                    />
+                    <AttributeMultiplierEditor value={content.gimmicks.caterpillarAttributeMultiplier} onChange={(parsed) => setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, caterpillarAttributeMultiplier: parsed } }))} availableAttributes={content.scoringAttributes} />
                     <label className="block text-[10px] text-slate-500 font-bold mb-1">💬 タップされたときのセリフ (1行に1文ずつ)</label>
                     <textarea
                       rows={4}
@@ -2366,18 +2405,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">開いた時に加算される属性ポイント (例: Score 10 Se 5)</label>
-                    <input
-                      type="text"
-                      placeholder='例: Score 10 Ni 2'
-                      value={stringifySimpleAttributes(content.gimmicks.secretLetterAttributeMultiplier)}
-                      onChange={(e) => {
-                        try {
-                          const parsed = e.target.value ? parseSimpleAttributes(e.target.value) : undefined;
-                          setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, secretLetterAttributeMultiplier: parsed } }));
-                        } catch(e) {}
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-400 transition-colors"
-                    />
+                    <AttributeMultiplierEditor value={content.gimmicks.secretLetterAttributeMultiplier} onChange={(parsed) => setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, secretLetterAttributeMultiplier: parsed } }))} availableAttributes={content.scoringAttributes} />
                   </div>
                 </div>
               )}
@@ -2464,18 +2492,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                   {(content.type === 'diagnostic' || content.type === 'quiz') && (
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">🎯 叩いた回数 × (加算する属性とポイント数) (例: Score 1 Se 5)</label>
-                      <input
-                        type="text"
-                        placeholder='例: Se 1 Score 5'
-                        value={stringifySimpleAttributes(content.gimmicks.tapBeatAttributeMultiplier)}
-                        onChange={(e) => {
-                          try {
-                            const parsed = e.target.value ? parseSimpleAttributes(e.target.value) : undefined;
-                            setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, tapBeatAttributeMultiplier: parsed } }));
-                          } catch(err) {}
-                        }}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-400 transition-colors"
-                      />
+                      <AttributeMultiplierEditor value={content.gimmicks.tapBeatAttributeMultiplier} onChange={(parsed) => setContent(prev => ({ ...prev, gimmicks: { ...prev.gimmicks, tapBeatAttributeMultiplier: parsed } }))} availableAttributes={content.scoringAttributes} />
                     </div>
                   )}
 

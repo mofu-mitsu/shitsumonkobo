@@ -994,6 +994,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
           squishQuote={content.gimmicks.caterpillarSquishQuote}
           squishTarget={content.gimmicks.caterpillarSquishTarget} 
           mascot={content.gimmicks.lsiMascotImageOrEmoji || "🐛"} 
+          maxAppearances={content.gimmicks.caterpillarMaxAppearances}
           onTap={() => {
             if (content.gimmicks.caterpillarAttributeMultiplier) {
               setGimmickScores(prev => {

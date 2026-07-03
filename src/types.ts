@@ -143,6 +143,7 @@ export interface ShitsumonKobo_GimmickConfig {
   caterpillarQuotes: string[];  // 芋虫がタップされたときに吐き出すセリフ
   caterpillarSquishQuote?: string; // 芋虫が潰された時の断末魔セリフ
   caterpillarSquishTarget: number; // 何回タップで潰せるか (デフォルト30)
+  caterpillarMaxAppearances?: number; // マスコットの登場回数上限 (undefinedなら無限)
   caterpillarEmoji?: string;    // カスタマイズされた芋虫の絵文字
   caterpillarName?: string;     // カスタマイズされた芋虫の名前
   caterpillarAttributeMultiplier?: Record<string, number>; // タップ/撃破時に加算される属性スコア

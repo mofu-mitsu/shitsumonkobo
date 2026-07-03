@@ -9,6 +9,7 @@ interface LsiCaterpillarProps {
   mascot?: string;
   onSquish?: () => void;
   onTap?: () => void;
+  maxAppearances?: number;
 }
 
 export default function LsiCaterpillar({
@@ -17,12 +18,14 @@ export default function LsiCaterpillar({
   squishTarget = 30,
   mascot = "🐛",
   onSquish,
-  onTap
+  onTap,
+  maxAppearances
 }: LsiCaterpillarProps) {
   const [posX, setPosX] = useState(110); // 画面右端外側からの位置 (%)
   const [quote, setQuote] = useState<string | null>(null);
   const [tapCount, setTapCount] = useState(0);
   const [isSquished, setIsSquished] = useState(false);
+  const appearanceCountRef = useRef(0);
   const quoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 芋虫をゆっくり左に動かすタイマー
