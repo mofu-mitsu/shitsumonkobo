@@ -661,7 +661,7 @@ async function start() {
       const protocol = req.protocol === 'https' || forwardedProto.includes('https') ? 'https' : 'http';
       const host = req.get('host') || 'shitsumonkobo.vercel.app';
       const baseUrl = `${protocol}://${host}`;
-      let img = `${baseUrl}/ogp.jpg`;
+      let img = `${baseUrl}/ogp.png`;
 
       if (sharedId) {
         try {
@@ -772,9 +772,9 @@ app.get("/api/ogp-image", async (req, res) => {
       }
     }
     // No base64 image found or error, just redirect to default
-    res.redirect("/ogp.jpg"); // default
+    res.redirect("/ogp.png"); // default
   } catch (e) {
-    res.redirect("/ogp.jpg");
+    res.redirect("/ogp.png");
   }
 });
 
