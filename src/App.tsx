@@ -132,7 +132,8 @@ export default function App() {
   
   // ナビゲーション・ビュー制御
   const [activeView, setActiveView] = useState<'gallery' | 'studio'>('gallery');
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(true);
   
   // モード：'idle' | 'creating' | 'playing'
   const [appMode, setAppMode] = useState<'idle' | 'creating' | 'playing'>('idle');
@@ -210,7 +211,7 @@ export default function App() {
       const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id)).map(s => ({...s, isDefault: true}));
       list = [...list, ...missingSamples];
       setPublicContents(list);
-      setIsInitializing(false);
+      setIsLoadingGallery(false);
       try { localStorage.setItem("shitsumonkobo_public_cache", JSON.stringify(list)); } catch (e) {}
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
@@ -218,7 +219,7 @@ export default function App() {
         setTimeout(() => fetchPublicList(retryCount + 1), 2000);
       } else {
         setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
-        setIsInitializing(false);
+        setIsLoadingGallery(false);
       }
     }
   };
@@ -788,7 +789,7 @@ export default function App() {
                   </p>
                 </div>
 
-                {publicContents.length === 0 ? (
+                {isLoadingGallery ? (<div className="text-center py-20 text-slate-500 font-sans bg-white/70 rounded-2xl border border-sky-100/55 animate-pulse">ギャラリーを読み込み中...</div>) : publicContents.length === 0 ? (
                   <div className="text-center py-20 text-slate-500 font-sans bg-white/70 rounded-2xl border border-sky-100/55">
                     公開されているしつもんが見つかりません。右上から自分でつくってみましょう！
                   </div>

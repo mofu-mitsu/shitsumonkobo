@@ -684,11 +684,11 @@ async function start() {
               }
               
               if (coverImg && coverImg.startsWith("data:image")) {
-                img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+                img = `${baseUrl}/api/ogp/${sharedId}.png`;
               } else if (coverImg && coverImg.startsWith("http")) {
                 img = coverImg;
               } else if (firstResultImg.startsWith("data:image")) {
-                img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+                img = `${baseUrl}/api/ogp/${sharedId}.png`;
               } else if (firstResultImg.startsWith("http")) {
                 img = firstResultImg;
               } else if (firstResultImg.startsWith("/")) {
@@ -719,6 +719,7 @@ async function start() {
         <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
         <meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}" />
         <meta name="twitter:image" content="${img}" />
+        <meta name="twitter:domain" content="${host}" />
       `;
       
       const html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);
@@ -736,11 +737,13 @@ async function start() {
 
   
 // OGP画像動的生成 (base64から画像ストリームへ)
-app.get("/api/ogp-image", async (req, res) => {
-  const sharedId = req.query.id;
+
+app.get("/api/ogp/:id.png", async (req, res) => {
+  const sharedId = req.params.id;
   if (!sharedId) {
     return res.status(404).send("Not found");
   }
+
   try {
     const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/databases/(default)/documents/contents/${sharedId}`);
     if (response.ok) {
@@ -765,18 +768,19 @@ app.get("/api/ogp-image", async (req, res) => {
           if (matches && matches.length === 3) {
             const type = matches[1];
             const buffer = Buffer.from(matches[2], 'base64');
-            res.set('Content-Type', type);
+            res.setHeader('Content-Type', type);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
             return res.send(buffer);
           }
         }
       }
     }
-    // No base64 image found or error, just redirect to default
-    res.redirect("/ogp.png"); // default
+    res.redirect("/ogp.png");
   } catch (e) {
     res.redirect("/ogp.png");
   }
 });
+
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running at http://localhost:${PORT}`);

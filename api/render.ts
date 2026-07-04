@@ -33,11 +33,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
             
             if (coverImg && coverImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+              img = `${baseUrl}/api/ogp/${sharedId}.png`;
             } else if (coverImg && coverImg.startsWith("http")) {
               img = coverImg;
             } else if (firstResultImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+              img = `${baseUrl}/api/ogp/${sharedId}.png`;
             } else if (firstResultImg.startsWith("http")) {
               img = firstResultImg;
             } else if (firstResultImg.startsWith("/")) {
@@ -69,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
         <meta name="twitter:description" content="${desc.replace(/"/g, '&quot;')}" />
         <meta name="twitter:image" content="${img}" />
+        <meta name="twitter:domain" content="${host}" />
     `;
     
     const html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);

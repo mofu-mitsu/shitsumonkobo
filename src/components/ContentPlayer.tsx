@@ -43,6 +43,7 @@ const ExpandableRecentAnswers = ({ items, renderItem, listClassName = "" }: { it
 };
 
 export default function ContentPlayer({ content, season, currentUser, onClose, initialShowDashboard = false, showAlert }: ContentPlayerProps) {
+  const resultCardRef = useRef<HTMLDivElement>(null);
   // プレイ基本設定
   const [useRandomOrder, setUseRandomOrder] = useState(false);
   const [maxQuestionLimit, setMaxQuestionLimit] = useState<number>(content.questions.length);

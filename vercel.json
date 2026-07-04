@@ -2,8 +2,8 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/ogp-image",
-      "destination": "/api/ogp-image"
+      "source": "/api/ogp/:id.png",
+      "destination": "/api/ogp-image.ts?id=$1"
     },
     {
       "source": "/",
@@ -13,7 +13,7 @@
           "key": "id"
         }
       ],
-      "destination": "/api/render"
+      "destination": "/api/render.ts"
     },
     {
       "source": "/(.*)",
