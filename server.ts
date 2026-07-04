@@ -632,69 +632,11 @@ app.post("/api/generate", async (req, res) => {
 // Vite統合と静的ファイル配信
 async function start() {
   const isProd = process.env.NODE_ENV === "production";
-  const distPath = path.join(process.cwd(), "dist");
+
   let vite: any;
-  if (!isProd) {
-    vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-  }
-
+  const distPath = path.join(process.cwd(), "dist"); 
   
-  // 1. Static assets and Vite dev server first
-  if (!isProd) {
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(distPath, { index: false })); // index.htmlを静的配信しない
-  }
-
-  // 2. OGP Image generation
-  app.get("/api/ogp/:id.png", async (req, res) => {
-    const sharedId = req.params.id;
-    if (!sharedId) {
-      return res.status(404).send("Not found");
-    }
-
-    try {
-      const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/databases/(default)/documents/contents/${sharedId}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.fields) {
-          let base64String = null;
-          if (data.fields.coverImageUrl?.stringValue && data.fields.coverImageUrl.stringValue.startsWith("data:image")) {
-            base64String = data.fields.coverImageUrl.stringValue;
-          } else {
-            // fallback to result image
-            const resultsArray = data.fields.results?.arrayValue?.values;
-            if (resultsArray && resultsArray.length > 0) {
-              const firstResult = resultsArray[0].mapValue?.fields;
-              if (firstResult && firstResult.imageUrl?.stringValue && firstResult.imageUrl.stringValue.startsWith("data:image")) {
-                base64String = firstResult.imageUrl.stringValue;
-              }
-            }
-          }
-          
-          if (base64String) {
-            const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-            if (matches && matches.length === 3) {
-              const type = matches[1];
-              const buffer = Buffer.from(matches[2], 'base64');
-              res.setHeader('Content-Type', type);
-              res.setHeader('Cache-Control', 'public, max-age=86400');
-              return res.send(buffer);
-            }
-          }
-        }
-      }
-      res.redirect("/ogp.png");
-    } catch (e) {
-      res.redirect("/ogp.png");
-    }
-  });
-
-  // 3. HTML SPA fallback with OGP injection
-  app.get("*", async (req, res, next) => {
+app.get("*", async (req, res, next) => {
     if (req.url.startsWith('/api') || req.url === '/admax.html') {
       return next();
     }
@@ -719,7 +661,7 @@ async function start() {
 
     if (sharedId) {
       try {
-        const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/databases/(default)/documents/contents/${sharedId}`);
+        const response = await fetch(`https://firestore.googleapis.com/v1/projects/gen-lang-client-0858097960/databases/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/documents/contents/${sharedId}?key=AIzaSyCKiukLUs8DlGvE8CU_R4iXYxB6Yt-IanU`);
         if (response.ok) {
           const data = await response.json();
           if (data && data.fields) {
@@ -776,9 +718,74 @@ async function start() {
       <meta name="twitter:domain" content="${host}" />
     `;
     
-    const html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);
+    let html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);
+    if (html === template) {
+      html = template.replace('<!-- OGP_PLACEHOLDER -->', ogpTags);
+    }
     res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
   });
+
+  if (!isProd) {
+    vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+  }
+
+  
+  // 1. Static assets and Vite dev server first
+  if (!isProd) {
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static(distPath, { index: false })); // index.htmlを静的配信しない
+  }
+
+  // 2. OGP Image generation
+  app.get("/api/ogp/:id.png", async (req, res) => {
+    const sharedId = req.params.id;
+    if (!sharedId) {
+      return res.status(404).send("Not found");
+    }
+
+    try {
+      const response = await fetch(`https://firestore.googleapis.com/v1/projects/gen-lang-client-0858097960/databases/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/documents/contents/${sharedId}?key=AIzaSyCKiukLUs8DlGvE8CU_R4iXYxB6Yt-IanU`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.fields) {
+          let base64String = null;
+          if (data.fields.coverImageUrl?.stringValue && data.fields.coverImageUrl.stringValue.startsWith("data:image")) {
+            base64String = data.fields.coverImageUrl.stringValue;
+          } else {
+            // fallback to result image
+            const resultsArray = data.fields.results?.arrayValue?.values;
+            if (resultsArray && resultsArray.length > 0) {
+              const firstResult = resultsArray[0].mapValue?.fields;
+              if (firstResult && firstResult.imageUrl?.stringValue && firstResult.imageUrl.stringValue.startsWith("data:image")) {
+                base64String = firstResult.imageUrl.stringValue;
+              }
+            }
+          }
+          
+          if (base64String) {
+            const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+              const type = matches[1];
+              const buffer = Buffer.from(matches[2], 'base64');
+              res.setHeader('Content-Type', type);
+              res.setHeader('Cache-Control', 'public, max-age=86400');
+              return res.send(buffer);
+            }
+          }
+        }
+      }
+      res.redirect("/ogp.png");
+    } catch (e) {
+      res.redirect("/ogp.png");
+    }
+  });
+
+  // 3. HTML SPA fallback with OGP injection
+  
 
 
   app.listen(PORT, "0.0.0.0", () => {

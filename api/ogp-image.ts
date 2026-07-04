@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/databases/(default)/documents/contents/${sharedId}`);
+    const response = await fetch(`https://firestore.googleapis.com/v1/projects/gen-lang-client-0858097960/databases/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/documents/contents/${sharedId}?key=AIzaSyCKiukLUs8DlGvE8CU_R4iXYxB6Yt-IanU`);
     if (response.ok) {
       const data = await response.json();
       if (data && data.fields) {

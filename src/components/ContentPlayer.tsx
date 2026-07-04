@@ -944,15 +944,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       const dataUrl = await htmlToImage.toPng(resultCardRef.current, { 
         backgroundColor: '#ffffff', 
         pixelRatio: 2,
-        width: 640,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-          width: '640px',
-          maxWidth: '640px'
-        },
         filter: (node) => {
-          // data-exclude-from-image がついている要素は除外
           if (node instanceof HTMLElement && node.dataset.excludeFromImage === 'true') {
             return false;
           }
