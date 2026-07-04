@@ -6,7 +6,7 @@ import PairingGame from "./PairingGame";
 import TapBeatGame from "./TapBeatGame";
 import LsiCaterpillar from "./LsiCaterpillar";
 import { motion, AnimatePresence } from "motion/react";
-import { Sparkles, ArrowRight, RotateCcw, Share2, Milestone, HelpCircle, CheckCircle2, Ticket, Check, X, BarChart } from "lucide-react";
+import { Sparkles, ArrowRight, RotateCcw, Share2, Milestone, HelpCircle, CheckCircle2, Ticket, Check, X, BarChart, Download } from "lucide-react";
 import { savePlayLog, getPlayStats, onSnapshotPlayStats } from "../lib/playLogs";
 import confetti from "canvas-confetti";
 
@@ -458,7 +458,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     });
 
     Object.entries(gimmickScores).forEach(([k, v]) => {
-      finalScores[k] = (finalScores[k] || 0) + v;
+      finalScores[k] = (finalScores[k] || 0) + (v as number);
     });
 
     return finalScores;

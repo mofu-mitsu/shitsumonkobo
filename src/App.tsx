@@ -132,7 +132,7 @@ export default function App() {
   
   // ナビゲーション・ビュー制御
   const [activeView, setActiveView] = useState<'gallery' | 'studio'>('gallery');
-  const [isInitializing, setIsInitializing] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [isLoadingGallery, setIsLoadingGallery] = useState(true);
   
   // モード：'idle' | 'creating' | 'playing'
@@ -283,7 +283,8 @@ export default function App() {
     } catch(e) {}
     
     // Simulate loading for the stylish entrance
-    // Removed artificial timeout so it loads faster or when ready
+    const timer = setTimeout(() => setIsInitializing(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期
