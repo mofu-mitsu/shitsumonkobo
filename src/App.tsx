@@ -79,6 +79,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        fetchPublicList();
         loadMyStudio(user.uid);
         
         // Play history sync
@@ -202,17 +203,23 @@ export default function App() {
 
 
   // サーバーの公開診断のロード
-  const fetchPublicList = async () => {
+    const fetchPublicList = async (retryCount = 0) => {
     try {
       let list = await getPublicContents();
       const dbIds = list.map(item => item.id);
       const missingSamples = initialSamples.filter(sample => !dbIds.includes(sample.id)).map(s => ({...s, isDefault: true}));
       list = [...list, ...missingSamples];
       setPublicContents(list);
+      setIsInitializing(false);
       try { localStorage.setItem("shitsumonkobo_public_cache", JSON.stringify(list)); } catch (e) {}
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
-      setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
+      if (retryCount < 2) {
+        setTimeout(() => fetchPublicList(retryCount + 1), 2000);
+      } else {
+        setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
+        setIsInitializing(false);
+      }
     }
   };
 
@@ -275,8 +282,7 @@ export default function App() {
     } catch(e) {}
     
     // Simulate loading for the stylish entrance
-    const timer = setTimeout(() => setIsInitializing(false), 1200);
-    return () => clearTimeout(timer);
+    // Removed artificial timeout so it loads faster or when ready
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期

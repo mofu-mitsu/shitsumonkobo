@@ -1,3 +1,4 @@
+import html2canvas from 'html2canvas';
 import React, { useState, useEffect, useRef } from "react";
 import { ShitsumonKobo_Content, ShitsumonKobo_Question, ShitsumonKobo_GachaItem, ShitsumonKobo_ResultOption } from "../types";
 import { playSound } from "./SoundEngine";
@@ -934,22 +935,40 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     setIsBgmPlaying(!isBgmPlaying);
   };
 
+  
+  const handleSaveImage = async () => {
+    if (!resultCardRef.current) return;
+    try {
+      const canvas = await html2canvas(resultCardRef.current, { backgroundColor: null, scale: 2 });
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${content.title}_result.png`;
+      a.click();
+    } catch (e) {
+      console.error("Failed to save image", e);
+    }
+  };
+
   const handleXShare = () => {
     let shareText = "";
+    const shortTitle = content.title.length > 20 ? content.title.substring(0, 20) + "…" : content.title;
     if (content.type === 'survey') {
-      shareText = `【しつもん工房 アンケート】\nお題：${content.title}\n回答しました！\n\nみんなも「しつもん工房」で回答してね！`;
+      shareText = `アンケート「${shortTitle}」に回答しました！`;
     } else if (content.type === 'quiz') {
       if (!finalResult) return;
       const totalQ = playQuestions.filter(isQuestionVisible).length;
       const correctQ = scores['correct'] || 0;
       const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
-      shareText = `【しつもん工房 クイズ】\nお題：${content.title}\n私の正答率は【${accuracy}%】でした！ (${correctQ}/${totalQ}問正解)\n結果ランク：${finalResult.title}\n\nみんなも「しつもん工房」で挑戦してみよう！`;
+      shareText = `クイズ「${shortTitle}」で【${accuracy}%】正解しました！\n結果: ${finalResult.title.substring(0, 20)}`;
+    } else if (content.type === 'gacha') {
+      shareText = `ガチャ「${shortTitle}」を回しました！`;
     } else {
       if (!finalResult) return;
-      shareText = `【しつもん工房 診断発表】\nお題：${content.title}\n私の診断結果は「${finalResult.title}」でした！\n\n${finalResult.description.substring(0, 80)}…\nみんなも「しつもん工房」で遊んでみよう！`;
+      shareText = `診断「${shortTitle}」\n結果は【${finalResult.title.substring(0, 20)}】でした！\n\n${finalResult.description.substring(0, 40)}…`;
     }
     const appUrl = `https://shitsumonkobo.vercel.app/?id=${content.id}`;
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`;
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}&hashtags=しつもん工房`;
     window.open(shareUrl, "_blank");
   };
 
@@ -1738,7 +1757,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       {/* =============== アンケートの専用終了画面 =============== */}
       {isFinished && content.type === 'survey' && (
         <div className="max-w-2xl mx-auto w-full space-y-6 animate-fade-in">
-          <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
+          <div ref={resultCardRef} className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-400 via-emerald-400 to-sky-400" />
             
             <div className="space-y-2">
@@ -1852,12 +1871,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                 >
                   <Ticket size={14} /> {copiedLink ? "コピーしました！" : "URLをコピーする"}
                 </button>
-                <button
-                  onClick={handleXShare}
-                  className="px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer text-sm w-full sm:w-auto flex items-center justify-center gap-1.5"
-                >
-                  <Share2 size={14} /> Xでシェアする
-                </button>
+                <button onClick={handleSaveImage} className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer text-sm w-full sm:w-auto flex items-center justify-center gap-1.5"><Download size={14} /> 画像で保存</button>
+                <button onClick={handleXShare} className="px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer text-sm w-full sm:w-auto flex items-center justify-center gap-1.5"><Share2 size={14} /> Xでシェアする</button>
               </div>
             </div>
           </div>
@@ -1866,7 +1881,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
         {/* =============== 回答終了の結果画面 =============== */}
         {isFinished && finalResult && content.type !== 'survey' && (
           <div className="max-w-2xl mx-auto w-full space-y-6">
-            <div className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
+            <div ref={resultCardRef} className="bg-white border border-sky-100 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden text-center">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-400 via-sky-400 to-indigo-400" />
               
               <div className="space-y-1">
@@ -1948,12 +1963,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                 >
                   <Ticket size={13} /> {copiedLink ? "URLをコピーしました！" : "URLをコピー"}
                 </button>
-                <button
-                  onClick={handleXShare}
-                  className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"
-                >
-                  <Share2 size={13} /> 結果をXに投稿する
-                </button>
+                <button onClick={handleSaveImage} className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"><Download size={13} /> 画像で保存</button>
+                <button onClick={handleXShare} className="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"><Share2 size={13} /> 結果をXに投稿する</button>
               </div>
             
       </div>
