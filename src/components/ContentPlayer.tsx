@@ -941,7 +941,25 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
     if (!resultCardRef.current) return;
     try {
       // Use html-to-image instead of html2canvas to support Tailwind v4 (oklch colors)
-      const dataUrl = await htmlToImage.toPng(resultCardRef.current, { backgroundColor: '#ffffff', pixelRatio: 2 });
+      const dataUrl = await htmlToImage.toPng(resultCardRef.current, { 
+        backgroundColor: '#ffffff', 
+        pixelRatio: 2,
+        width: 640,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          width: '640px',
+          maxWidth: '640px'
+        },
+        filter: (node) => {
+          // data-exclude-from-image がついている要素は除外
+          if (node instanceof HTMLElement && node.dataset.excludeFromImage === 'true') {
+            return false;
+          }
+          return true;
+        }
+      });
+
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = `${content.title}_result.png`;
@@ -1860,7 +1878,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-6">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-6" data-exclude-from-image="true">
                 <button
                   onClick={resetPlay}
                   className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all shadow-sm border border-slate-200 cursor-pointer text-sm w-full sm:w-auto flex items-center justify-center gap-1.5"
@@ -1952,13 +1970,8 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               </div>
 
               {/* アクションボタン */}
-              <div className="flex flex-wrap gap-3 justify-center select-none">
-                <button
-                  onClick={handleStart}
-                  className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-6 py-3 rounded-xl border border-sky-200 flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer w-full sm:w-auto"
-                >
-                  <RotateCcw size={13} /> もう一度しつもんを解く
-                </button>
+              <div className="flex flex-wrap gap-3 justify-center select-none" data-exclude-from-image="true">
+                <button onClick={resetPlay} className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-6 py-3 rounded-xl border border-sky-200 flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer w-full sm:w-auto"><RotateCcw size={13} /> もう一度しつもんを解く</button>
                 <button
                   onClick={handleCopyLink}
                   className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-6 py-3 rounded-xl border border-sky-200 flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer w-full sm:w-auto"

@@ -3,21 +3,15 @@
   "rewrites": [
     {
       "source": "/api/ogp/:id.png",
-      "destination": "/api/ogp-image.ts?id=$1"
+      "destination": "/api/ogp-image?id=$1"
     },
     {
       "source": "/",
-      "has": [
-        {
-          "type": "query",
-          "key": "id"
-        }
-      ],
-      "destination": "/api/render.ts"
+      "destination": "/api/render"
     },
     {
       "source": "/((?!assets/|api/|.*\\..*).*)",
-      "destination": "/index.html"
+      "destination": "/api/render"
     }
   ]
 }

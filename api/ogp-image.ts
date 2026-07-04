@@ -2,7 +2,8 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sharedId = req.query.id as string;
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const forwardedProto = req.headers['x-forwarded-proto'] || 'https';
+  const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto.split(',')[0];
   const host = req.headers.host || 'shitsumonkobo.vercel.app';
   const fallbackUrl = `${protocol}://${host}/ogp.png`;
 

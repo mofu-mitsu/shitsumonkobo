@@ -1,11 +1,14 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import fs from 'fs';
+import path from 'path';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const sharedId = req.query.id as string;
     let title = "しつもん工房";
     let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const forwardedProto = req.headers['x-forwarded-proto'] || 'https';
+    const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto.split(',')[0];
     const host = req.headers.host || 'shitsumonkobo.vercel.app';
     const baseUrl = `${protocol}://${host}`;
     let img = `${baseUrl}/ogp.png`;
@@ -31,11 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
             
             if (coverImg && coverImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp/${sharedId}.png`;
+              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
             } else if (coverImg && coverImg.startsWith("http")) {
               img = coverImg;
             } else if (firstResultImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp/${sharedId}.png`;
+              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
             } else if (firstResultImg.startsWith("http")) {
               img = firstResultImg;
             } else if (firstResultImg.startsWith("/")) {
@@ -49,16 +52,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     let template = "";
-    try {
-      // Fetch the actual SPA index.html from the domain root
-      const htmlRes = await fetch(`${baseUrl}/`);
-      if (htmlRes.ok) {
-        template = await htmlRes.text();
-      } else {
-        throw new Error("Failed to load root html");
+    
+    // Try to read index.html from disk
+    const distPath = path.join(process.cwd(), 'dist', 'index.html');
+    const publicPath = path.join(process.cwd(), 'public', 'index.html');
+    const rootPath = path.join(process.cwd(), 'index.html');
+    
+    if (fs.existsSync(distPath)) {
+      template = fs.readFileSync(distPath, "utf-8");
+    } else if (fs.existsSync(publicPath)) {
+      template = fs.readFileSync(publicPath, "utf-8");
+    } else if (fs.existsSync(rootPath)) {
+      template = fs.readFileSync(rootPath, "utf-8");
+    } else {
+      // Fallback to fetch /index.html (which is served statically by Vercel and excluded from rewrites)
+      try {
+        const htmlRes = await fetch(`${baseUrl}/index.html`);
+        if (htmlRes.ok) {
+          template = await htmlRes.text();
+        } else {
+          throw new Error("Failed to load /index.html");
+        }
+      } catch (err) {
+        template = `<!DOCTYPE html><html><head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <title>しつもん工房 | ノーコードで診断・心理テスト・クイズ・アンケート・ガチャが作れる</title>
+      <!-- OGP_PLACEHOLDER -->
+    </head>
+    <body>
+      <div id="root"></div>
+      <script type="module" src="/src/main.tsx"></script>
+    </body></html>`;
       }
-    } catch (err) {
-      template = `<!DOCTYPE html><html><head><!-- OGP_PLACEHOLDER --></head><body>Loading...</body></html>`;
     }
 
     const ogpTags = `
