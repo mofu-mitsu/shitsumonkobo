@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import React, { useState, useEffect, useRef } from "react";
 import { ShitsumonKobo_Content, ShitsumonKobo_Question, ShitsumonKobo_GachaItem, ShitsumonKobo_ResultOption } from "../types";
 import { playSound } from "./SoundEngine";
@@ -940,14 +940,15 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
   const handleSaveImage = async () => {
     if (!resultCardRef.current) return;
     try {
-      const canvas = await html2canvas(resultCardRef.current, { backgroundColor: null, scale: 2 });
-      const url = canvas.toDataURL("image/png");
+      // Use html-to-image instead of html2canvas to support Tailwind v4 (oklch colors)
+      const dataUrl = await htmlToImage.toPng(resultCardRef.current, { backgroundColor: '#ffffff', pixelRatio: 2 });
       const a = document.createElement("a");
-      a.href = url;
+      a.href = dataUrl;
       a.download = `${content.title}_result.png`;
       a.click();
     } catch (e) {
       console.error("Failed to save image", e);
+      if (showAlert) showAlert("エラー", "画像の保存に失敗しました。", "error");
     }
   };
 

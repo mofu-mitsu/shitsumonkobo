@@ -212,6 +212,7 @@ export default function App() {
       list = [...list, ...missingSamples];
       setPublicContents(list);
       setIsLoadingGallery(false);
+      setIsInitializing(false);
       try { localStorage.setItem("shitsumonkobo_public_cache", JSON.stringify(list)); } catch (e) {}
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
@@ -220,6 +221,7 @@ export default function App() {
       } else {
         setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
         setIsLoadingGallery(false);
+        setIsInitializing(false);
       }
     }
   };
@@ -283,8 +285,7 @@ export default function App() {
     } catch(e) {}
     
     // Simulate loading for the stylish entrance
-    const timer = setTimeout(() => setIsInitializing(false), 1200);
-    return () => clearTimeout(timer);
+    
   }, []);
 
   // 自身が作成した診断のローカル・サーバー重複保存＆同期

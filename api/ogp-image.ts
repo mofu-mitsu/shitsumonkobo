@@ -2,8 +2,12 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sharedId = req.query.id as string;
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers.host || 'shitsumonkobo.vercel.app';
+  const fallbackUrl = `${protocol}://${host}/ogp.png`;
+
   if (!sharedId) {
-    return res.status(404).send("Not found");
+    return res.redirect(fallbackUrl);
   }
 
   try {
@@ -26,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         
         if (base64String) {
-          const matches = base64String.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+          const matches = base64String.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
           if (matches && matches.length === 3) {
             const type = matches[1];
             const buffer = Buffer.from(matches[2], 'base64');
@@ -38,8 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
     // No base64 image found or error, just redirect to default
-    res.redirect("/ogp.png");
+    res.redirect(fallbackUrl);
   } catch (e) {
-    res.redirect("/ogp.png");
+    res.redirect(fallbackUrl);
   }
 }

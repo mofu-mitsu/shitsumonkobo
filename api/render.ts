@@ -1,13 +1,11 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fs from 'fs';
-import path from 'path';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const sharedId = req.query.id as string;
     let title = "しつもん工房";
     let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
-    const protocol = 'https';
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers.host || 'shitsumonkobo.vercel.app';
     const baseUrl = `${protocol}://${host}`;
     let img = `${baseUrl}/ogp.png`;
@@ -50,12 +48,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const distPath = path.join(process.cwd(), 'dist', 'index.html');
     let template = "";
-    if (fs.existsSync(distPath)) {
-      template = fs.readFileSync(distPath, "utf-8");
-    } else {
-      // Fallback if dist doesn't exist (e.g. during dev)
+    try {
+      // Fetch the actual SPA index.html from the domain root
+      const htmlRes = await fetch(`${baseUrl}/`);
+      if (htmlRes.ok) {
+        template = await htmlRes.text();
+      } else {
+        throw new Error("Failed to load root html");
+      }
+    } catch (err) {
       template = `<!DOCTYPE html><html><head><!-- OGP_PLACEHOLDER --></head><body>Loading...</body></html>`;
     }
 
@@ -72,6 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <meta name="twitter:domain" content="${host}" />
     `;
     
+    // Inject OGP tags
     const html = template.replace(/<!-- Default OGP Tags[\s\S]*?<!-- OGP_PLACEHOLDER -->/, ogpTags);
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
