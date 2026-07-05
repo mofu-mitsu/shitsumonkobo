@@ -733,15 +733,8 @@ app.get("*", async (req, res, next) => {
   }
 
   
-  // 1. Static assets and Vite dev server first
-  if (!isProd) {
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(distPath, { index: false })); // index.htmlを静的配信しない
-  }
-
   // 2. OGP Image generation
-  app.get("/api/ogp/:id.png", async (req, res) => {
+  app.get("/api/ogp/:id.png", async (req, res) => { console.log("OGP route hit: " + req.url);
     const sharedId = req.params.id;
     if (!sharedId) {
       return res.status(404).send("Not found");
@@ -784,6 +777,14 @@ app.get("*", async (req, res, next) => {
     }
   });
 
+  // 1. Static assets and Vite dev server first
+  if (!isProd) {
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static(distPath, { index: false })); // index.htmlを静的配信しない
+  }
+
+  
   // 3. HTML SPA fallback with OGP injection
   
 
