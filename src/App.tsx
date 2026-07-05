@@ -15,6 +15,24 @@ import { initialSamples } from "./data/initialSamples";
 
 // 季節ごとのオートカラーを算出
 
+export 
+const safeSetStorage = (key: string, value: string) => {
+  try {
+    safeSetStorage(key, value);
+  } catch (e) {
+    console.warn("Storage quota exceeded or unavailable for key:", key);
+    // If it's history, try to keep only the 5 most recent
+    if (key === "shitsumonkobo_history") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed) && parsed.length > 5) {
+          safeSetStorage(key, JSON.stringify(parsed.slice(0, 5)));
+        }
+      } catch (e2) {}
+    }
+  }
+};
+
 export const getSeasons = () => [
   { name: "春 (桜色)", bgColor: "from-pink-500/15 via-rose-400/10 to-pink-50", accentColor: "#ec4899", textColor: "text-pink-500", accentBg: "bg-pink-500/20 border-pink-500/30 text-pink-500", icon: "🌸", effect: "petals", titleGradient: "from-pink-600 to-rose-500", buttonGradient: "from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600", tagGradient: "from-pink-400 to-rose-400" },
   { name: "夏 (空色)", bgColor: "from-sky-500/10 via-blue-500/5 to-transparent", accentColor: "#0ea5e9", textColor: "text-sky-500", accentBg: "bg-sky-500/20 border-sky-500/30 text-sky-500", icon: "🌻", effect: "none", titleGradient: "from-sky-600 to-indigo-600", buttonGradient: "from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600", tagGradient: "from-sky-400 to-indigo-500" },
@@ -98,7 +116,7 @@ export default function App() {
           if (merged.length > 30) merged = merged.slice(0, 30);
           
           setPlayHistory(merged);
-          localStorage.setItem("shitsumonkobo_history", JSON.stringify(merged));
+          safeSetStorage("shitsumonkobo_history", JSON.stringify(merged));
           if (localHistory.length > 0) {
             await syncUserPlayHistory(user.uid, merged);
           }
@@ -213,7 +231,7 @@ export default function App() {
       setPublicContents(list);
       setIsLoadingGallery(false);
       setIsInitializing(false);
-      try { localStorage.setItem("shitsumonkobo_public_cache", JSON.stringify(list)); } catch (e) {}
+      safeSetStorage("shitsumonkobo_public_cache", JSON.stringify(list));
     } catch (error) {
       console.error("サーバーから公開リストの取得に失敗しました:", error);
       if (retryCount < 2) {
@@ -254,7 +272,7 @@ export default function App() {
 
       setMyContents(merged);
       if (needsLocalUpdate) {
-        localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(merged));
+        safeSetStorage("my_shitsumonkobo_studio", JSON.stringify(merged));
       }
     } catch (e) {
       console.error("スタジオの読み込みに失敗しました:", e);
@@ -306,7 +324,7 @@ export default function App() {
         nextMy.unshift(updated);
       }
       setMyContents(nextMy);
-      localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+      safeSetStorage("my_shitsumonkobo_studio", JSON.stringify(nextMy));
       
       fetchPublicList(); // 公開リスト再ロード
       
@@ -339,7 +357,7 @@ export default function App() {
           // 2. ローカルから削除
           const nextMy = myContents.filter(c => c.id !== id);
           setMyContents(nextMy);
-          localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+          safeSetStorage("my_shitsumonkobo_studio", JSON.stringify(nextMy));
           
           // 3. ギャラリーからも即座に消す
           setPublicContents(prev => prev.filter(c => c.id !== id));
@@ -353,7 +371,7 @@ export default function App() {
           // サーバー削除が権限エラー等で失敗しても、とりあえずローカルUIからは消す (自分が作ったものではないサンプルの削除など)
           const nextMy = myContents.filter(c => c.id !== id);
           setMyContents(nextMy);
-          localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+          safeSetStorage("my_shitsumonkobo_studio", JSON.stringify(nextMy));
           setPublicContents(prev => prev.filter(c => c.id !== id));
         }
       },
@@ -406,7 +424,7 @@ export default function App() {
 
         const nextMy = [importedItem, ...myContents];
         setMyContents(nextMy);
-        localStorage.setItem("my_shitsumonkobo_studio", JSON.stringify(nextMy));
+        safeSetStorage("my_shitsumonkobo_studio", JSON.stringify(nextMy));
         
         fetchPublicList();
 
@@ -487,11 +505,7 @@ export default function App() {
         newHistory.unshift(minimalItem);
         if (newHistory.length > 30) newHistory = newHistory.slice(0, 30);
         
-        try {
-          localStorage.setItem("shitsumonkobo_history", JSON.stringify(newHistory));
-        } catch(e) {
-          console.error("Storage error:", e);
-        }
+        safeSetStorage("shitsumonkobo_history", JSON.stringify(newHistory));
         
         if (currentUser) {
           syncUserPlayHistory(currentUser.uid, newHistory).catch(console.error);

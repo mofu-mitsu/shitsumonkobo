@@ -709,7 +709,7 @@ app.get("*", async (req, res, next) => {
       <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
       <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
       <meta property="og:image" content="${img}" />
-      <meta property="og:url" content="${baseUrl}/?id=${sharedId || ''}" />
+      <meta property="og:url" content="${baseUrl}${req.url}" />
       <meta property="og:type" content="website" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />

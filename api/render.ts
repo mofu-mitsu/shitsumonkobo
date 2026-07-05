@@ -34,11 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
             
             if (coverImg && coverImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+              img = `${baseUrl}/api/ogp/${sharedId}.png`;
             } else if (coverImg && coverImg.startsWith("http")) {
               img = coverImg;
             } else if (firstResultImg.startsWith("data:image")) {
-              img = `${baseUrl}/api/ogp-image?id=${sharedId}`;
+              img = `${baseUrl}/api/ogp/${sharedId}.png`;
             } else if (firstResultImg.startsWith("http")) {
               img = firstResultImg;
             } else if (firstResultImg.startsWith("/")) {
@@ -91,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
         <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
         <meta property="og:image" content="${img}" />
-        <meta property="og:url" content="${baseUrl}/?id=${sharedId || ''}" />
+        <meta property="og:url" content="${baseUrl}${req.url}" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
