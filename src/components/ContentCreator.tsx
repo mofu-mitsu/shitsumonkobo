@@ -2161,7 +2161,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                                         }}
                                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700"
                                       >
-                                        <option value="">カスタム式を入力する...</option>
+                                        <option value="">-- 属性を選択してください --</option>
                                         {content.scoringAttributes.map(attr => (
                                           <option key={attr} value={attr}>{attr} が一番高い時</option>
                                         ))}

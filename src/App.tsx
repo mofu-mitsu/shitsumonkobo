@@ -18,7 +18,7 @@ import { initialSamples } from "./data/initialSamples";
 export 
 const safeSetStorage = (key: string, value: string) => {
   try {
-    safeSetStorage(key, value);
+    localStorage.setItem(key, value);
   } catch (e) {
     console.warn("Storage quota exceeded or unavailable for key:", key);
     // If it's history, try to keep only the 5 most recent
@@ -26,7 +26,7 @@ const safeSetStorage = (key: string, value: string) => {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed) && parsed.length > 5) {
-          safeSetStorage(key, JSON.stringify(parsed.slice(0, 5)));
+          localStorage.setItem(key, JSON.stringify(parsed.slice(0, 5)));
         }
       } catch (e2) {}
     }
@@ -200,7 +200,10 @@ export default function App() {
   useEffect(() => {
     const handleUrlQuery = async () => {
       const params = new URLSearchParams(window.location.search);
-      const sharedId = params.get("id");
+      let sharedId = params.get("id");
+      if (!sharedId && window.location.pathname.startsWith('/s/')) {
+        sharedId = window.location.pathname.split('/s/')[1];
+      }
       if (sharedId) {
         // まずサーバーから共有データを直接引っ張る
         try {
@@ -214,6 +217,20 @@ export default function App() {
           }
         } catch (err) {
           console.error("共有しつもんのロード中に通信エラーが発生しました:", err);
+        }
+        
+        // ローカルフォールバック
+        const raw = localStorage.getItem("my_shitsumonkobo_studio");
+        if (raw) {
+          try {
+            const localList = JSON.parse(raw);
+            const found = localList.find(item => item.id === sharedId);
+            if (found) {
+              setTargetContent(found);
+              setAppMode('playing');
+              playSound("bell");
+            }
+          } catch(e) {}
         }
       }
     };
@@ -237,7 +254,17 @@ export default function App() {
       if (retryCount < 2) {
         setTimeout(() => fetchPublicList(retryCount + 1), 2000);
       } else {
-        setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
+        const cached = localStorage.getItem("shitsumonkobo_public_cache");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            setPublicContents(parsed);
+          } catch(e) {
+            setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
+          }
+        } else {
+          setPublicContents(initialSamples.map(s => ({...s, isDefault: true})));
+        }
         setIsLoadingGallery(false);
         setIsInitializing(false);
       }

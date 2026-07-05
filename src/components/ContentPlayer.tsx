@@ -677,14 +677,21 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       let bestResult = maxExprResults[0];
       let maxVal = -Infinity;
       maxExprResults.forEach(r => {
-        if (r.advancedCondition) {
+        let expr = r.advancedCondition;
+        if (!expr) {
+          const matchingAttr = content.scoringAttributes.find(attr => r.title.includes(attr));
+          if (matchingAttr) {
+            expr = matchingAttr;
+          }
+        }
+        if (expr) {
           try {
             const allAttrs = Array.from(new Set([...Object.keys(finalScores), ...(content.scoringAttributes || [])]));
             let val = 0;
-            if (allAttrs.includes(r.advancedCondition)) {
-              val = finalScores[r.advancedCondition] || 0;
+            if (allAttrs.includes(expr)) {
+              val = finalScores[expr] || 0;
             } else {
-              let evalStr = r.advancedCondition;
+              let evalStr = expr;
               const keys = allAttrs.sort((a, b) => b.length - a.length);
               keys.forEach(k => {
                 const score = finalScores[k] || 0;
