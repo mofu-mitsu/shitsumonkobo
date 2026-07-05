@@ -999,14 +999,14 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       if (!finalResult) return;
       shareText = `診断「${shortTitle}」\n結果は【${finalResult.title.substring(0, 20)}】でした！\n\n${finalResult.description.substring(0, 40)}…`;
     }
-    const appUrl = `https://shitsumonkobo.vercel.app/?id=${content.id}`;
+    const appUrl = `https://shitsumonkobo.vercel.app/s/${content.id}`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}&hashtags=しつもん工房`;
     window.open(shareUrl, "_blank");
   };
 
   const [copiedLink, setCopiedLink] = useState(false);
   const handleCopyLink = () => {
-    const appUrl = `https://shitsumonkobo.vercel.app/?id=${content.id}`;
+    const appUrl = `https://shitsumonkobo.vercel.app/s/${content.id}`;
     navigator.clipboard.writeText(appUrl);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);

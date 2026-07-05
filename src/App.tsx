@@ -333,7 +333,7 @@ export default function App() {
       showSuccessShare(
         "保存しました！✨",
         "このしつもんは共有可能になりました。ギャラリーやスタジオから遊べます！",
-        `${window.location.origin}/?id=${updated.id}`,
+        `${window.location.origin}/s/${updated.id}`,
         <Sparkles className="text-pink-500" />
       );
     } catch (error) {
@@ -386,7 +386,7 @@ export default function App() {
     
     // 一意の共有パラメータURLを創出
     const base = window.location.origin + window.location.pathname;
-    const shareUrl = `${base}?id=${id}`;
+    const shareUrl = `${base}s/${id}`;
 
     navigator.clipboard.writeText(shareUrl).then(() => {
       setToastMessage("🔗 共有専用URLをコピーしました！");

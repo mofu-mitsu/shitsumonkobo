@@ -708,11 +708,12 @@ app.get("*", async (req, res, next) => {
       template = fs.readFileSync(path.join(distPath, "app.html"), "utf-8");
     }
 
+    const finalUrl = sharedId ? `${baseUrl}/s/${sharedId}` : `${baseUrl}${req.url}`;
     const ogpTags = `
       <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
       <meta property="og:description" content="${desc.replace(/"/g, '&quot;')}" />
       <meta property="og:image" content="${img}" />
-      <meta property="og:url" content="${baseUrl}${req.url}" />
+      <meta property="og:url" content="${finalUrl}" />
       <meta property="og:type" content="website" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
