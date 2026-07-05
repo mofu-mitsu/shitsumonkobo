@@ -6,6 +6,10 @@
       "destination": "/api/ogp-image?id=$1"
     },
     {
+      "source": "/s/:id",
+      "destination": "/api/render?id=$1"
+    },
+    {
       "source": "/",
       "destination": "/api/render"
     },

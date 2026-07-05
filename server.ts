@@ -650,7 +650,10 @@ app.get("*", async (req, res, next) => {
       return res.status(404).send("Not found");
     }
 
-    const sharedId = req.query.id as string;
+    let sharedId = req.query.id as string;
+    if (!sharedId && parsedUrl.pathname.startsWith('/s/')) {
+      sharedId = parsedUrl.pathname.split('/s/')[1];
+    }
     let title = "しつもん工房";
     let desc = "誰でも簡単にオリジナルの診断・クイズ・アンケートが作れるプラットフォーム";
     const forwardedProto = req.headers['x-forwarded-proto'] || '';
