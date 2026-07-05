@@ -679,12 +679,26 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       maxExprResults.forEach(r => {
         if (r.advancedCondition) {
           try {
-            let evalStr = r.advancedCondition;
-            Object.entries(finalScores).forEach(([k, v]) => {
-              evalStr = evalStr.replace(new RegExp(`\\b${k}\\b`, 'g'), v.toString());
-            });
-            evalStr = evalStr.replace(/[a-zA-Z_]+/g, '0'); // 未定義の変数は0にする
-            const val = Number(new Function('return ' + evalStr)());
+            const allAttrs = Array.from(new Set([...Object.keys(finalScores), ...(content.scoringAttributes || [])]));
+            let val = 0;
+            if (allAttrs.includes(r.advancedCondition)) {
+              val = finalScores[r.advancedCondition] || 0;
+            } else {
+              let evalStr = r.advancedCondition;
+              const keys = allAttrs.sort((a, b) => b.length - a.length);
+              keys.forEach(k => {
+                const score = finalScores[k] || 0;
+                const isAlphanumeric = /^[a-zA-Z0-9_]+$/.test(k);
+                if (isAlphanumeric) {
+                  evalStr = evalStr.replace(new RegExp(`\\b${k}\\b`, 'g'), score.toString());
+                } else {
+                  evalStr = evalStr.split(k).join(score.toString());
+                }
+              });
+              evalStr = evalStr.replace(/[a-zA-Z_]+/g, '0'); // 未定義の変数は0にする
+              val = Number(new Function('return ' + evalStr)());
+            }
+
             if (!isNaN(val) && val > maxVal) {
               maxVal = val;
               bestResult = r;
@@ -710,9 +724,17 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
       
       if (type === 'expression' && r.advancedCondition) {
         try {
+          const allAttrs = Array.from(new Set([...Object.keys(finalScores), ...(content.scoringAttributes || [])]));
           let evalStr = r.advancedCondition;
-          Object.entries(finalScores).forEach(([k, v]) => {
-            evalStr = evalStr.replace(new RegExp(`\\b${k}\\b`, 'g'), v.toString());
+          const keys = allAttrs.sort((a, b) => b.length - a.length);
+          keys.forEach(k => {
+            const score = finalScores[k] || 0;
+            const isAlphanumeric = /^[a-zA-Z0-9_]+$/.test(k);
+            if (isAlphanumeric) {
+              evalStr = evalStr.replace(new RegExp(`\\b${k}\\b`, 'g'), score.toString());
+            } else {
+              evalStr = evalStr.split(k).join(score.toString());
+            }
           });
           evalStr = evalStr.replace(/[a-zA-Z_]+/g, '0');
           return new Function('return ' + evalStr)();
