@@ -1,8 +1,7 @@
 const fs = require('fs');
-let code = fs.readFileSync('server.ts', 'utf-8');
+let server = fs.readFileSync('server.ts', 'utf-8');
 
-code = code.replace(/const html = template\.replace\('<\/head>', `\$\{ogpTags\}\\n<\/head>`\);/, 
-  "const html = template.replace('<!-- OGP_PLACEHOLDER -->', ogpTags);");
+server = server.replace(/path\.resolve\("app\.html"\)/g, 'path.resolve("index.html")');
 
-fs.writeFileSync('server.ts', code);
-console.log("Fixed server.ts html replace");
+fs.writeFileSync('server.ts', server);
+console.log("Fixed server.ts");

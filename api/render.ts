@@ -54,9 +54,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let template = "";
     
     // Try to read index.html from disk
-    const distPath = path.join(process.cwd(), 'dist', 'index.html');
-    const publicPath = path.join(process.cwd(), 'public', 'index.html');
-    const rootPath = path.join(process.cwd(), 'index.html');
+    const distPath = path.join(process.cwd(), 'dist', 'app.html');
+    const publicPath = path.join(process.cwd(), 'public', 'app.html');
+    const rootPath = path.join(process.cwd(), 'app.html');
     
     if (fs.existsSync(distPath)) {
       template = fs.readFileSync(distPath, "utf-8");
@@ -67,11 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       // Fallback to fetch /index.html (which is served statically by Vercel and excluded from rewrites)
       try {
-        const htmlRes = await fetch(`${baseUrl}/index.html`);
+        const htmlRes = await fetch(`${baseUrl}/app.html`);
         if (htmlRes.ok) {
           template = await htmlRes.text();
         } else {
-          throw new Error("Failed to load /index.html");
+          throw new Error("Failed to load /app.html");
         }
       } catch (err) {
         template = `<!DOCTYPE html><html><head>

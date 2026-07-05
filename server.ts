@@ -644,7 +644,7 @@ app.get("*", async (req, res, next) => {
     // We already let Vite and Express static handle everything else, so anything reaching here should be a page request.
     const parsedUrl = new URL(req.url, 'http://localhost');
     const ext = path.extname(parsedUrl.pathname);
-    // Even if it has an extension, if it missed the static folder, we might want to 404, but standard SPA fallback returns index.html.
+    // Even if it has an extension, if it missed the static folder, we might want to 404, but standard SPA fallback returns app.html.
     // To be safe against returning HTML for missing .js files:
     if (ext && ext !== '.html') {
       return res.status(404).send("Not found");
@@ -702,7 +702,7 @@ app.get("*", async (req, res, next) => {
       template = fs.readFileSync(path.resolve("index.html"), "utf-8");
       template = await vite.transformIndexHtml(req.url, template);
     } else {
-      template = fs.readFileSync(path.join(distPath, "index.html"), "utf-8");
+      template = fs.readFileSync(path.join(distPath, "app.html"), "utf-8");
     }
 
     const ogpTags = `
@@ -781,7 +781,7 @@ app.get("*", async (req, res, next) => {
   if (!isProd) {
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(distPath, { index: false })); // index.htmlを静的配信しない
+    app.use(express.static(distPath, { index: false })); // app.htmlを静的配信しない
   }
 
   
