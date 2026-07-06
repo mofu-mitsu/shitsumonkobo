@@ -4,9 +4,9 @@ import ContentCreator from "./components/ContentCreator";
 import ContentPlayer from "./components/ContentPlayer";
 import { playSound } from "./components/SoundEngine";
 import WeatherEffect from "./components/WeatherEffect";
-import { auth, loginWithGoogle, logout } from "./lib/firebase";
+import { loginWithGoogle, logout, onAuthStateChanged } from "./lib/auth";
 import { getPublicContents, getMyContents, getContentById, saveContent, deleteContent, syncUserPlayHistory, getUserPlayHistory } from "./lib/contents";
-import { onAuthStateChanged, User } from "firebase/auth";
+type User = any;
 import { Search, Sparkles, Plus, Download, Upload, Share2, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, X, Menu, HelpCircle, BarChart, Ticket, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import SponsorAd from "./components/SponsorAd";
@@ -94,15 +94,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
         fetchPublicList();
-        loadMyStudio(user.uid);
+        loadMyStudio(user.id);
         
         // Play history sync
         try {
-          const serverHistory = await getUserPlayHistory(user.uid);
+          const serverHistory = await getUserPlayHistory(user.id);
           const raw = localStorage.getItem("shitsumonkobo_history");
           let localHistory: ShitsumonKobo_Content[] = [];
           if (raw) localHistory = JSON.parse(raw);
@@ -118,7 +118,7 @@ export default function App() {
           setPlayHistory(merged);
           safeSetStorage("shitsumonkobo_history", JSON.stringify(merged));
           if (localHistory.length > 0) {
-            await syncUserPlayHistory(user.uid, merged);
+            await syncUserPlayHistory(user.id, merged);
           }
         } catch(e) {}
 

@@ -666,8 +666,8 @@ app.get("*", async (req, res, next) => {
       try {
         const response = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/shitsumon_contents?id=eq.${sharedId}&select=*`, {
           headers: {
-            'apikey': process.env.VITE_SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY || ''}`
+            'apikey': (process.env.VITE_SUPABASE_ANON_KEY || '').includes('eyJ') ? (process.env.VITE_SUPABASE_ANON_KEY || '').substring((process.env.VITE_SUPABASE_ANON_KEY || '').indexOf('eyJ')) : process.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${(process.env.VITE_SUPABASE_ANON_KEY || '').includes('eyJ') ? (process.env.VITE_SUPABASE_ANON_KEY || '').substring((process.env.VITE_SUPABASE_ANON_KEY || '').indexOf('eyJ')) : process.env.VITE_SUPABASE_ANON_KEY}`
           }
         });
         if (response.ok) {
@@ -751,8 +751,8 @@ app.get("*", async (req, res, next) => {
     try {
       const response = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/shitsumon_contents?id=eq.${sharedId}&select=*`, {
           headers: {
-            'apikey': process.env.VITE_SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY || ''}`
+            'apikey': (process.env.VITE_SUPABASE_ANON_KEY || '').includes('eyJ') ? (process.env.VITE_SUPABASE_ANON_KEY || '').substring((process.env.VITE_SUPABASE_ANON_KEY || '').indexOf('eyJ')) : process.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${(process.env.VITE_SUPABASE_ANON_KEY || '').includes('eyJ') ? (process.env.VITE_SUPABASE_ANON_KEY || '').substring((process.env.VITE_SUPABASE_ANON_KEY || '').indexOf('eyJ')) : process.env.VITE_SUPABASE_ANON_KEY}`
           }
         });
       if (response.ok) {

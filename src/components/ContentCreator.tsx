@@ -13,7 +13,7 @@ import {
 import { playSound } from "./SoundEngine";
 import { AnimatePresence, motion } from "motion/react";
 import ContentPlayer from "./ContentPlayer";
-import { User } from "firebase/auth";
+type User = any;
 import { Settings, Save, ChevronUp, ChevronDown, Play, Share2, Plus, Download, Upload, Eye, Edit2, Trash2, Globe, Heart, Compass, Pocket, ArrowRight, Palette, Ticket, Milestone, Sparkles, Layers, ListTodo, Sliders, X } from 'lucide-react';
 
 
@@ -633,14 +633,14 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
             <button
               onClick={async () => {
                 try {
-                  const { loginWithGoogle } = await import("../lib/firebase");
+                  const { loginWithGoogle } = await import("../lib/auth");
                   await loginWithGoogle();
                 } catch (e: any) {
                   if (e?.code === 'auth/operation-not-allowed') {
                     if (showAlert) {
-                      showAlert('設定エラー', 'FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
+                      showAlert('設定エラー', 'SupabaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。', 'error');
                     } else {
-                      alert('FirebaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
+                      alert('SupabaseコンソールのAuthentication設定で、Googleプロバイダを有効にしてください。');
                     }
                   } else {
                     console.log("Login popup closed or failed:", e);

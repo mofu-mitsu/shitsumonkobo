@@ -1,4 +1,4 @@
-import { auth } from './firebase';
+import { supabase } from './supabase';
 import { supabase } from './supabase';
 
 export const savePlayLog = async (contentId: string, creatorXHandle: string | undefined, data: any) => {
@@ -11,7 +11,7 @@ export const savePlayLog = async (contentId: string, creatorXHandle: string | un
         content_id: contentId,
         creator_x_handle: creatorXHandle || "unknown",
         played_at: new Date().toISOString(),
-        user_id: auth.currentUser?.uid || "anonymous",
+        user_id: (await supabase.auth.getSession()).data.session?.user?.id || "anonymous",
         data: cleanData
       });
       
