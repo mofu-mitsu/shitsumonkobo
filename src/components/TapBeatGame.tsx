@@ -30,6 +30,9 @@ export default function TapBeatGame({
   onScoreGained,
   soundType = "synth",
 }: TapBeatGameProps) {
+  const validEmojis = emojis.filter(e => e.trim().length > 0);
+  const activeEmojis = validEmojis.length > 0 ? validEmojis : ["💡"];
+
   const [items, setItems] = useState<TapItem[]>([]);
   const [pops, setPops] = useState<ClickPop[]>([]);
   const [totalTaps, setTotalTaps] = useState(0);

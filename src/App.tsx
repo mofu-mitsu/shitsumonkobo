@@ -337,7 +337,7 @@ export default function App() {
   const handleSaveContent = async (updated: ShitsumonKobo_Content) => {
     try {
       if (currentUser && !updated.creatorId) {
-        updated.creatorId = currentUser.uid;
+        updated.creatorId = currentUser.id;
       }
       // 1. サーバーへ保存
       await saveContent(updated);
@@ -442,7 +442,7 @@ export default function App() {
           ...payload,
           id: "ShitsumonKobo_" + Math.random().toString(36).substring(2, 9),
           createdAt: new Date().toISOString(),
-          creatorId: currentUser?.uid
+          creatorId: currentUser?.id
         };
 
         // サーバーに保存
@@ -534,7 +534,7 @@ export default function App() {
         safeSetStorage("shitsumonkobo_history", JSON.stringify(newHistory));
         
         if (currentUser) {
-          syncUserPlayHistory(currentUser.uid, newHistory).catch(console.error);
+          syncUserPlayHistory(currentUser.id, newHistory).catch(console.error);
         }
         
         return newHistory;
@@ -624,7 +624,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 {currentUser ? (
                   <div className="flex items-center gap-2">
-                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
+                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id}`} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
                     <span className="text-xs font-bold text-slate-600 max-w-[100px] truncate">{(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '名無しの職人')}</span>
                     <button onClick={logout} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
                   </div>
@@ -754,7 +754,7 @@ export default function App() {
               {currentUser ? (
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
+                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.id}`} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
                     <span className="text-xs font-bold text-slate-600 truncate">{(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '名無しの職人')}</span>
                   </div>
                   <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
@@ -953,7 +953,7 @@ export default function App() {
                           <div className="flex justify-between items-center pt-3 border-t border-slate-100 text-[10px] text-slate-400 mt-3 select-none">
                             <span>作者: <strong>{item.creatorName || "名無しさん"}</strong></span>
                             <div className="flex items-center gap-3">
-                              {(item.creatorId === currentUser?.uid || !item.creatorId) && (
+                              {(item.creatorId === currentUser?.id || !item.creatorId) && (
                                 <button
                                   onClick={(e) => handleDeleteContent(item.id, e)}
                                   className="text-slate-400 hover:text-red-500 transition-colors p-1 cursor-pointer"

@@ -8,13 +8,7 @@ if (SUPABASE_KEY.includes('eyJ')) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function run() {
-  const { data, error } = await supabase.from('shitsumon_play_logs').insert([{
-    content_id: 'test',
-    creator_x_handle: 'unknown',
-    played_at: new Date().toISOString(),
-    user_id: 'anonymous',
-    data: {}
-  }]);
-  console.log(error);
+  const { data, error } = await supabase.from('shitsumon_play_logs').select('*').limit(1);
+  console.log(data, error);
 }
 run();
