@@ -2495,7 +2495,7 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
                       type="text"
                       value={content.gimmicks.tapBeatEmojis.join("、")}
                       onChange={(e) => {
-                        const emojis = e.target.value.split(/[,、]/).map(em => em.trim()).filter(Boolean);
+                        const emojis = e.target.value.split(/[,、]/).map(em => em.trim());
                         setContent(prev => ({
                           ...prev,
                           gimmicks: { ...prev.gimmicks, tapBeatEmojis: emojis }

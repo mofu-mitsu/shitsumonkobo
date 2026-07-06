@@ -38,7 +38,7 @@ export default function TapBeatGame({
   useEffect(() => {
     const list: TapItem[] = Array.from({ length: 6 }).map((_, i) => ({
       id: `tap_item_${i}_${Date.now()}`,
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      emoji: activeEmojis[Math.floor(Math.random() * activeEmojis.length)],
       x: Math.random() * 80 + 10, // 10% ~ 90%
       y: Math.random() * 50 + 20, // 20% ~ 70%
       speedX: (Math.random() - 0.5) * 2,
@@ -115,7 +115,7 @@ export default function TapBeatGame({
         if (item.id === itemId) {
           return {
             ...item,
-            emoji: emojis[Math.floor(Math.random() * emojis.length)],
+            emoji: activeEmojis[Math.floor(Math.random() * activeEmojis.length)],
             x: Math.random() * 80 + 10,
             y: Math.random() * 50 + 20,
             speedX: (Math.random() - 0.5) * 2.5,

@@ -624,8 +624,8 @@ export default function App() {
               <div className="flex items-center gap-3">
                 {currentUser ? (
                   <div className="flex items-center gap-2">
-                    <img src={currentUser.photoURL || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
-                    <span className="text-xs font-bold text-slate-600 max-w-[100px] truncate">{currentUser.displayName}</span>
+                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
+                    <span className="text-xs font-bold text-slate-600 max-w-[100px] truncate">{(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '名無しの職人')}</span>
                     <button onClick={logout} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
                   </div>
                 ) : (
@@ -754,8 +754,8 @@ export default function App() {
               {currentUser ? (
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
-                    <img src={currentUser.photoURL || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
-                    <span className="text-xs font-bold text-slate-600 truncate">{currentUser.displayName}</span>
+                    <img src={(currentUser?.user_metadata?.avatar_url || currentUser?.user_metadata?.picture || currentUser?.user_metadata?.custom_claims?.picture) || ""} alt="avatar" className="w-8 h-8 rounded-full border border-sky-200" />
+                    <span className="text-xs font-bold text-slate-600 truncate">{(currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '名無しの職人')}</span>
                   </div>
                   <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer">ログアウト</button>
                 </div>
