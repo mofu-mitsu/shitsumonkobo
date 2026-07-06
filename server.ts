@@ -664,21 +664,25 @@ app.get("*", async (req, res, next) => {
 
     if (sharedId) {
       try {
-        const response = await fetch(`https://firestore.googleapis.com/v1/projects/gen-lang-client-0858097960/databases/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/documents/contents/${sharedId}?key=AIzaSyCKiukLUs8DlGvE8CU_R4iXYxB6Yt-IanU`);
+        const response = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/shitsumon_contents?id=eq.${sharedId}&select=*`, {
+          headers: {
+            'apikey': process.env.VITE_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY || ''}`
+          }
+        });
         if (response.ok) {
           const data = await response.json();
-          if (data && data.fields) {
-            const contentTitle = data.fields.title?.stringValue || "無題";
-            title = `${contentTitle} - しつもん工房`;
-            desc = data.fields.description?.stringValue || desc;
+          if (Array.isArray(data) && data.length > 0) {
+            const row = data[0];
+            title = `${row.title || "無題"} - しつもん工房`;
+            desc = row.description || desc;
             
-            const coverImg = data.fields.coverImageUrl?.stringValue;
-            const resultsArray = data.fields.results?.arrayValue?.values;
+            const coverImg = row.coverImageUrl;
+            const resultsArray = row.results;
             let firstResultImg = "";
             if (resultsArray && resultsArray.length > 0) {
-              const firstResult = resultsArray[0].mapValue?.fields;
-              if (firstResult && firstResult.imageUrl?.stringValue) {
-                firstResultImg = firstResult.imageUrl.stringValue;
+              if (resultsArray[0].imageUrl) {
+                firstResultImg = resultsArray[0].imageUrl;
               }
             }
             
@@ -745,20 +749,23 @@ app.get("*", async (req, res, next) => {
     }
 
     try {
-      const response = await fetch(`https://firestore.googleapis.com/v1/projects/gen-lang-client-0858097960/databases/ai-studio-8b45955a-b902-4ba8-8a93-bd5476d4b9d2/documents/contents/${sharedId}?key=AIzaSyCKiukLUs8DlGvE8CU_R4iXYxB6Yt-IanU`);
+      const response = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/shitsumon_contents?id=eq.${sharedId}&select=*`, {
+          headers: {
+            'apikey': process.env.VITE_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${process.env.VITE_SUPABASE_ANON_KEY || ''}`
+          }
+        });
       if (response.ok) {
         const data = await response.json();
-        if (data && data.fields) {
+        if (Array.isArray(data) && data.length > 0) {
+          const row = data[0];
           let base64String = null;
-          if (data.fields.coverImageUrl?.stringValue && data.fields.coverImageUrl.stringValue.startsWith("data:image")) {
-            base64String = data.fields.coverImageUrl.stringValue;
+          if (row.coverImageUrl && row.coverImageUrl.startsWith("data:image")) {
+            base64String = row.coverImageUrl;
           } else {
-            // fallback to result image
-            const resultsArray = data.fields.results?.arrayValue?.values;
-            if (resultsArray && resultsArray.length > 0) {
-              const firstResult = resultsArray[0].mapValue?.fields;
-              if (firstResult && firstResult.imageUrl?.stringValue && firstResult.imageUrl.stringValue.startsWith("data:image")) {
-                base64String = firstResult.imageUrl.stringValue;
+            if (row.results && row.results.length > 0) {
+              if (row.results[0].imageUrl && row.results[0].imageUrl.startsWith("data:image")) {
+                base64String = row.results[0].imageUrl;
               }
             }
           }

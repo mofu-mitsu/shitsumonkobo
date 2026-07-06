@@ -2490,19 +2490,19 @@ export default function ContentCreator({ season, onSave, onCancel, initialConten
               {content.gimmicks.enableTapBeat && (
                 <div className="space-y-3 pl-3 border-l-2 border-slate-200">
                   <div>
-                    <label className="block text-[10px] text-slate-500 font-bold mb-1">出現させる浮遊絵文字たち (半角カンマ区切り)</label>
+                    <label className="block text-[10px] text-slate-500 font-bold mb-1">出現させる浮遊絵文字・顔文字たち (カンマまたは読点で区切り)</label>
                     <input
                       type="text"
-                      value={content.gimmicks.tapBeatEmojis.join(",")}
+                      value={content.gimmicks.tapBeatEmojis.join("、")}
                       onChange={(e) => {
-                        const emojis = e.target.value.split(",").map(em => em.trim()).filter(Boolean);
+                        const emojis = e.target.value.split(/[,、]/).map(em => em.trim()).filter(Boolean);
                         setContent(prev => ({
                           ...prev,
                           gimmicks: { ...prev.gimmicks, tapBeatEmojis: emojis }
                         }));
                       }}
                       className="bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-850 w-full placeholder-slate-400 focus:outline-none"
-                      placeholder="例: 🐱,🐸,🦁,🐛"
+                      placeholder="例: 🐱、🐸、( ´ ▽ ` )、🐛"
                     />
                   </div>
 

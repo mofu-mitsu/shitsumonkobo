@@ -412,8 +412,7 @@ export default function App() {
     playSound("synth");
     
     // 一意の共有パラメータURLを創出
-    const base = window.location.origin + window.location.pathname;
-    const shareUrl = `${base}s/${id}`;
+    const shareUrl = `${window.location.origin}/s/${id}`;
 
     navigator.clipboard.writeText(shareUrl).then(() => {
       setToastMessage("🔗 共有専用URLをコピーしました！");
