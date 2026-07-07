@@ -1762,11 +1762,11 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                             {itm.rarity}
                           </span>
                           
-                          <div className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 border border-slate-100 my-1 mt-3">
+                          <div className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-50 border border-slate-100 my-1 mt-3 overflow-hidden">
                             {itm.imageUrlOrEmoji.startsWith("http") ? (
                               <img src={itm.imageUrlOrEmoji} alt="" className="w-10 h-10 object-contain rounded" />
                             ) : (
-                              <span className="text-2xl">{itm.imageUrlOrEmoji || "🎁"}</span>
+                              <span className="text-2xl whitespace-nowrap flex items-center justify-center" style={{ transform: itm.imageUrlOrEmoji.length > 2 ? `scale(${Math.min(1, 2.5 / itm.imageUrlOrEmoji.length)})` : 'none', transformOrigin: 'center' }}>{itm.imageUrlOrEmoji || "🎁"}</span>
                             )}
                           </div>
 
@@ -2086,11 +2086,11 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                 {selectedGachaItem.rarity}
               </span>
 
-              <div className="w-28 h-28 flex items-center justify-center rounded-full bg-slate-50 border border-slate-100 shadow-inner flex-shrink-0">
+              <div className="w-28 h-28 flex items-center justify-center rounded-full bg-slate-50 border border-slate-100 shadow-inner flex-shrink-0 overflow-hidden">
                 {selectedGachaItem.imageUrlOrEmoji.startsWith("http") ? (
                   <img src={selectedGachaItem.imageUrlOrEmoji} alt="" className="w-20 h-20 object-contain rounded-xl" />
                 ) : (
-                  <span className="text-5xl">{selectedGachaItem.imageUrlOrEmoji || "🎁"}</span>
+                  <span className="text-5xl whitespace-nowrap flex items-center justify-center" style={{ transform: selectedGachaItem.imageUrlOrEmoji.length > 3 ? `scale(${Math.min(1, 4 / selectedGachaItem.imageUrlOrEmoji.length)})` : 'none', transformOrigin: 'center' }}>{selectedGachaItem.imageUrlOrEmoji || "🎁"}</span>
                 )}
               </div>
 
