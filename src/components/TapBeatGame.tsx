@@ -160,7 +160,7 @@ export default function TapBeatGame({
             }}
             onMouseDown={(e) => handleItemTap(item.id, e)}
           >
-            {item.emoji}
+            <span className="whitespace-nowrap flex items-center justify-center" style={{ transform: item.emoji.length > 2 ? `scale(${Math.min(1, 2.5 / item.emoji.length)})` : 'none', transformOrigin: 'center' }}>{item.emoji}</span>
           </div>
         ))}
 
