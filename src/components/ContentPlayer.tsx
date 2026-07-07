@@ -1614,7 +1614,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
                   {(() => {
                     // 回答済みチェック
                     let isAnswered = false;
-                    if (currentQ.type === 'five_choices' || currentQ.type === 'radio') {
+                    if (currentQ.type === 'five_choices' || currentQ.type === 'radio' || currentQ.type === 'dropdown') {
                       isAnswered = !!textAnswers[currentQ.id];
                     } else if (currentQ.type === 'checkbox') {
                       isAnswered = Object.values(checkboxAnswers[currentQ.id] || {}).some(val => val === true);
@@ -2095,7 +2095,7 @@ export default function ContentPlayer({ content, season, currentUser, onClose, i
               </div>
 
               <div className="space-y-1 w-full flex-shrink-0">
-                <h3 className="text-lg font-bold text-slate-800 break-all">{selectedGachaItem.name}</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-800 break-all whitespace-pre-wrap leading-tight">{selectedGachaItem.name}</h3>
                 <p className="text-[10px] text-slate-400 font-bold">排出確率: {selectedGachaItem.probability}%</p>
               </div>
 
