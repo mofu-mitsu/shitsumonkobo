@@ -170,6 +170,7 @@ export interface ShitsumonKobo_Content {
   title: string;
   description: string;
   coverImageUrl?: string;
+  iconUrl?: string;
   type: ShitsumonKobo_ContentType;
   quizMode?: 'instant' | 'summary'; // クイズモード：即時判定か、最後にまとめて結果か
   surveyShowStats?: boolean; // アンケートモードで終了時に投票率を表示するか

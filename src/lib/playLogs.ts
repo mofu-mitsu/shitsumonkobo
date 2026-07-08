@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { supabase } from './supabase';
 
 export const savePlayLog = async (contentId: string, creatorXHandle: string | undefined, data: any) => {
   try {
@@ -39,7 +38,7 @@ export const getPlayStats = async (contentId: string) => {
 
 export const onSnapshotPlayStats = (contentId: string, callback: (logs: any[]) => void) => {
   // Supabase realtime subscription
-  const channel = supabase.channel(`public:shitsumon_play_logs:content_id=eq.${contentId}`)
+  const channel = supabase.channel(`public:shitsumon_play_logs:content_id=eq.${contentId}_${Math.random()}`)
     .on('postgres_changes', { 
       event: 'INSERT', 
       schema: 'public', 
